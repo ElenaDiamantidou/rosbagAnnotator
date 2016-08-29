@@ -126,7 +126,6 @@ if __name__ == '__main__':
     if not video_writer.isOpened():
         self.errorMessages(2)
     else:
-        print("Video initialized")
         #VideoWriter(const string& filename, int fourcc, double fps, Size frameSize, bool isColor=true)
         for frame in imageBuffer:
             depthFrame = frame.astype('uint8')
