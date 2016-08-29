@@ -175,6 +175,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
     #----------------------
     def checkPositionToStop(self):
         self.time_ = self.player.position()
+        tStart = float(self.time)/1000.0
+        iS = np.argmin(np.abs(audioGlobals.timeArrayToPlot - tStart))
+        audioGlobals.fig.axes.plot(audioGlobals.timeArrayToPlot[iS],self.signalToPlot[iS], color = 'black', alpha=0.65)
         print self.time_
         if self.time_ >= self.end:
             self.Stop()

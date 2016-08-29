@@ -34,6 +34,7 @@ import warnings
 
 from matplotlib.widgets import Cursor
 from numpy import arange, sin, pi
+import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.transforms as transforms
@@ -175,7 +176,6 @@ class VideoWidgetSurface(QAbstractVideoSurface):
         return _bool
 
     def start(self, _format):
-        global frameCounter, durationSlider,posSlider
         imageFormat = QVideoFrame.imageFormatFromPixelFormat(_format.pixelFormat())
         size = _format.frameSize()
         #frameCounter = 0 #Frame Counter initialize
@@ -709,14 +709,21 @@ class VideoPlayer(QWidget):
 
 
         self.positionSlider = QSlider(Qt.Horizontal)
-        self.positionSlider.setRange(0, audioGlobals.duration)
-        self.positionSlider.setTickPosition(QtWidgets.QSlider.TicksAbove)
-        self.positionSlider.setTickInterval(10)
-        self.positionSlider.setSingleStep(20)
+        #self.positionSlider.setRange(0, audioGlobals.duration)
+        self.positionSlider.setMinimum(0)
+        self.positionSlider.setMaximum(audioGlobals.duration)
         self.positionSlider.sliderMoved.connect(self.setPosition)
 
+        #add label to slider about elapsed time
+        self.label_tmp = '<b><FONT SIZE=2>{}</b>'
+        self.timelabel = QLabel(self.label_tmp.format(audioGlobals.duration))
+
+
+        self.label = QHBoxLayout()
+        self.label.addWidget(self.timelabel)
+        self.label.setAlignment(Qt.AlignRight)
+
         self.controlLayout = QHBoxLayout()
-        #self.controlLayout.setContentsMargins(0, 0, 0, 0)
         self.controlLayout.addWidget(self.openButton)
         self.controlLayout.addWidget(self.importCsv)
         self.controlLayout.addWidget(self.playButton)
@@ -724,6 +731,10 @@ class VideoPlayer(QWidget):
         self.controlLayout.addWidget(self.depthButton)
         self.controlLayout.setAlignment(Qt.AlignLeft)
         self.controlEnabled = False
+
+        self.control = QHBoxLayout()
+        self.control.addLayout(self.controlLayout)
+        self.control.addLayout(self.label)
 
         # >> Video Gantt Chart
         self.gantt = gantShow()
@@ -783,7 +794,7 @@ class VideoPlayer(QWidget):
 
         mainLayout = QVBoxLayout()
         mainLayout.addLayout(laserAndVideoLayout)
-        mainLayout.addLayout(self.controlLayout)
+        mainLayout.addLayout(self.control)
         mainLayout.addWidget(self.positionSlider)
         mainLayout.addWidget(self.gantt)
         mainLayout.addLayout(waveLayout)
@@ -893,10 +904,12 @@ class VideoPlayer(QWidget):
     #----------------------
     def checkPositionToStop(self):
         self.time_ = self.player.position()
+        #self.positionSlider.setValue(self.time_/1000)
         #print self.time_
         if self.time_ >= self.end:
             self.audioStop()
             self.player.setPosition(self.start)
+            #self.positionSlider.setValue(self.start)
 
 
     # >> LASER BUTTON FUNCTIONS
@@ -1080,6 +1093,8 @@ class VideoPlayer(QWidget):
 
     def positionChanged(self, position):
         self.positionSlider.setValue(position)
+        self.timelabel.setText(self.label_tmp.format(position/1000))
+        #self.timelabel.(position)
 
     def keyPressEvent(self,event):
         if event.key() == Qt.Key_Control:
