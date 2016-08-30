@@ -57,6 +57,7 @@ import ganttChartAudio as gA
 from graphicalInterfaceAudio import ApplicationWindow 
 import rosbagAudio 
 import laserGui
+import rosbagDepth
 ''''''''''''''''''''''''''''''''''''
 
 start_point = False
@@ -629,7 +630,7 @@ class VideoPlayer(QWidget):
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         #self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
         self.setWindowFlags( (self.windowFlags() | Qt.CustomizeWindowHint) & ~Qt.WindowMaximizeButtonHint)
-        
+
         self.box_buffer = []
         self.metric_buffer = []
 
@@ -746,23 +747,19 @@ class VideoPlayer(QWidget):
         gantChart.setFixedSize(1440, 130)
         
 
-        #DEFINE PLAYER-PLAYLIST   
-        #----------------------
-        self.source = QtCore.QUrl.fromLocalFile(os.path.abspath(audioGlobals.wavFileName))
-        self.content = QMediaContent(self.source)
-        self.player = QMediaPlayer()
-        self.playlist = QMediaPlaylist(self)
-        self.playlist.addMedia(self.content)
-        self.player.setPlaylist(self.playlist)
-
         # >> Define Audio annotations and gantt chart 
         #---------------------- 
+        
         self.wave = vA.Waveform()
         audioGlobals.fig = self.wave
-        self.wave.setFixedSize(1440, 180)
+        self.wave.axes.get_xaxis().set_visible(False)
+        self.wave.draw()
+        self.wave.setFixedSize(1440, 185)
+        
+        
         self.chart = gA.Chart()
         audioGlobals.chartFig = self.chart
-        self.chart.setFixedSize(1440, 100)
+        self.chart.setFixedSize(1440, 95)
 
         # >> Define Audio Player buttons 
         #---------------------- 
@@ -973,13 +970,17 @@ class VideoPlayer(QWidget):
 
     def openFile(self):
         global imageBuffer,framerate
+
         fileName,_ = QFileDialog.getOpenFileName(self, "Open Bag", QDir.currentPath(),"(*.bag)")
+        print str(fileName)
 
         if not fileName:
             pass
         else:
             try:
                 bag = rosbag.Bag(fileName)
+                rosbagAudio.runMain('rosbags/2016-07-04-16-19-14.bag')
+                rosbagDepth.runMain(bag)
             except:
                 self.errorMessages(0)
 
@@ -994,7 +995,7 @@ class VideoPlayer(QWidget):
             if not video_writer.isOpened():
                 self.errorMessages(2)
             else:
-                print("Video initialized")
+                #print("Video initialized")
                 for frame in imageBuffer:
                     video_writer.write(frame)
                 video_writer.release()
@@ -1006,12 +1007,29 @@ class VideoPlayer(QWidget):
             self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath('myvidDepth.avi'))))
             self.playButton.setEnabled(True)
 
+        #DEFINE PLAYER-PLAYLIST   
+        #----------------------
+        self.source = QtCore.QUrl.fromLocalFile(os.path.abspath(audioGlobals.wavFileName))
+        self.content = QMediaContent(self.source)
+        self.player = QMediaPlayer()
+        self.playlist = QMediaPlaylist(self)
+        self.playlist.addMedia(self.content)
+        self.player.setPlaylist(self.playlist)
+
+        self.wave.drawWave()
+        self.wave.drawAnnotations()
+        self.wave.draw()
+        self.chart.drawChart()
+        self.chart.draw()
+
+
     #Open CSV file
     def openCsv(self):
         global classLabels,gantEnabled
         self.box_buffer = []
         self.metric_buffer = []
 
+        # OPEN VIDEO - DEPTH - AUDIO
         fileName,_ =  QFileDialog.getOpenFileName(self, "Open Csv ", QDir.currentPath(),"(*.csv)")
         box_buff,metrics_buff,box_action = buffer_csv(fileName)
 
@@ -1269,7 +1287,9 @@ class gantShow(videoGantChart):
         for tick in self.axes.yaxis.get_major_ticks():
             tick.label.set_fontsize(9)
 
-        self.axes.set_xticks(self.tickX)
+        #self.axes.set_xticks(self.tickX)
+        self.axes.set_xticklabels([])
+        self.axes.get_xaxis().set_visible(False)
         self.axes.set_yticks(self.tickY)
         self.axes.set_ylim([-1,len(self.boxAtYaxes)])
         self.axes.set_yticklabels(['<'+str(index[0])+'>::'+index[1] for index in self.boxAtYaxes])
@@ -1300,7 +1320,6 @@ class gantShow(videoGantChart):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     #rosbagAudio.runMain('rosbags/2016-07-22-13-25-52.bag')
-    rosbagAudio.runMain('rosbags/2016-07-04-16-19-14.bag')
     #rosbagAudio.runMain('test.bag')
     player = VideoPlayer()
     player.resize(640,720)

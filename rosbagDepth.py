@@ -60,7 +60,7 @@ def buffer_data(bag, input_topic, compressed):
     start_time = None
     depthData = []
     bridge     = CvBridge()
-    bag = rosbag.Bag(bagFile)
+    #bag = rosbag.Bag(bagFile)
     #Buffer the images, timestamps from the rosbag
     for topic, msg, t in bag.read_messages(topics=[input_topic]):
         depthData+=msg.data
@@ -87,8 +87,7 @@ def buffer_data(bag, input_topic, compressed):
 
 
 def depth_bag_file(bagFile):
-    bag = rosbag.Bag(bagFile)
-    info_dict = yaml.load(bag._get_yaml_info())
+    info_dict = yaml.load(bagFile._get_yaml_info())
     topics = info_dict['topics']
     topic = topics[1]
     duration = info_dict['duration']
@@ -112,10 +111,9 @@ def depth_bag_file(bagFile):
     return message_count,duration,compressed, framerate
 
 
-if __name__ == '__main__':
-    bagFile = parse_arguments()
-    (message_count,duration,compressed, framerate) = depth_bag_file(bagFile)
-    (imageBuffer, time_buff) = buffer_data(bagFile, "/camera/depth/image_raw", compressed)
+def runMain(bagFileName):
+    (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName)
+    (imageBuffer, time_buff) = buffer_data(bagFileName, "/camera/depth/image_raw", compressed)
 
     fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
     height, width = imageBuffer[0].shape

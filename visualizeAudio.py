@@ -46,8 +46,9 @@ class Window(FigureCanvas):
         fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = fig.add_subplot(111)
 
-        self.drawWave()
+        #self.drawWave()
         self.drawAnnotations()
+
 
         FigureCanvas.__init__(self, fig)
         #self.setParent(parent)
@@ -140,6 +141,7 @@ class Waveform(Window):
         audioGlobals.timeArrayToPlot = self.timeArray[0:-1:self.plotStep]
 
         #Plot Waveform Signal
+        self.axes.get_xaxis().set_visible(True)
         self.axes.plot(audioGlobals.timeArrayToPlot, self.signalToPlot)
         self.axes.set_yticklabels([])
         self.axes.set_xlim([-1,audioGlobals.duration + 1])
@@ -352,7 +354,8 @@ class Waveform(Window):
     # >> PLOT annotations SAVED ON .CSV FILE
     #----------------------
     def drawAnnotations(self):
-
+        self.axes.set_yticklabels([])
+        self.axes.get_yaxis().set_visible(False)
         color = None
         for index in range(len(audioGlobals.annotations)):
             startAnnotation = float(audioGlobals.annotations[index][0])/1000.0
