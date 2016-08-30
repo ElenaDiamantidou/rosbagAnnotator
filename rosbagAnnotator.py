@@ -629,6 +629,9 @@ class VideoPlayer(QWidget):
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         #self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
         self.setWindowFlags( (self.windowFlags() | Qt.CustomizeWindowHint) & ~Qt.WindowMaximizeButtonHint)
+        
+        self.box_buffer = []
+        self.metric_buffer = []
 
         self.videoWidget = VideoWidget()
         self.laserScan = laserGui.LS()
@@ -643,8 +646,6 @@ class VideoPlayer(QWidget):
         prevFrameButtonLaser = QPushButton("Previous")
         nextFrameButtonLaser = QPushButton("Next")
         stopButtonLaser = QPushButton("Stop")
-        annotationButtonLaser = QPushButton("Annotation")
-        saveButtonLaser = QPushButton("Save")
         le = QLineEdit(self)
         le.setDragEnabled(True)
         addButtonLaser = QPushButton('Add', self)
@@ -652,16 +653,13 @@ class VideoPlayer(QWidget):
         classes = QComboBox()
         classes.addItem('Classes')
 
-        buttonLayout = QVBoxLayout()
-        buttonLayout.addWidget(playButtonLaser)
-        buttonLayout.addWidget(pauseButtonLaser)
-        buttonLayout.addWidget(prevFrameButtonLaser)
-        buttonLayout.addWidget(nextFrameButtonLaser)
-        buttonLayout.addWidget(stopButtonLaser)
-        buttonLayout.addStretch(1)
-        buttonLayout.addWidget(annotationButtonLaser)
-        buttonLayout.addWidget(saveButtonLaser)
-        buttonLayout.setAlignment(Qt.AlignTop)
+        buttonLayoutLaser = QHBoxLayout()
+        buttonLayoutLaser.addWidget(playButtonLaser)
+        buttonLayoutLaser.addWidget(pauseButtonLaser)
+        buttonLayoutLaser.addWidget(prevFrameButtonLaser)
+        buttonLayoutLaser.addWidget(nextFrameButtonLaser)
+        buttonLayoutLaser.addWidget(stopButtonLaser)
+        buttonLayoutLaser.setAlignment(Qt.AlignLeft)
 
         classLayout = QVBoxLayout()
         classLayout.addWidget(classes)
@@ -715,13 +713,13 @@ class VideoPlayer(QWidget):
         self.positionSlider.sliderMoved.connect(self.setPosition)
 
         #add label to slider about elapsed time
-        self.label_tmp = '<b><FONT SIZE=2>{}</b>'
-        self.timelabel = QLabel(self.label_tmp.format(audioGlobals.duration))
+        self.label_tmp = '<b><FONT SIZE=3>{}</b>'
+        self.timelabel = QLabel(self.label_tmp.format('Elapsed Time: ' + str(audioGlobals.duration)))
 
 
         self.label = QHBoxLayout()
         self.label.addWidget(self.timelabel)
-        self.label.setAlignment(Qt.AlignRight)
+        self.label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
 
         self.controlLayout = QHBoxLayout()
         self.controlLayout.addWidget(self.openButton)
@@ -730,11 +728,17 @@ class VideoPlayer(QWidget):
         self.controlLayout.addWidget(self.rgbButton)
         self.controlLayout.addWidget(self.depthButton)
         self.controlLayout.setAlignment(Qt.AlignLeft)
+        #self.controlLayout.addStretch(-1) 
         self.controlEnabled = False
 
-        self.control = QHBoxLayout()
-        self.control.addLayout(self.controlLayout)
-        self.control.addLayout(self.label)
+        videoLayout = QVBoxLayout()
+        videoLayout.addWidget(self.videoWidget)
+        videoLayout.addLayout(self.controlLayout)
+
+        self.controlLaser = QHBoxLayout()
+        self.controlLaser.addLayout(buttonLayoutLaser)
+        self.controlLaser.addLayout(self.label)
+
 
         # >> Video Gantt Chart
         self.gantt = gantShow()
@@ -780,21 +784,25 @@ class VideoPlayer(QWidget):
         buttonLayoutAudio.addWidget(stopButtonAudio)
         buttonLayoutAudio.setAlignment(Qt.AlignLeft)
 
-        layoutLaser = QHBoxLayout()
-        layoutLaser.setAlignment(Qt.AlignTop)
-        layoutLaser.addLayout(scanLayout)
-        layoutLaser.addLayout(buttonLayout)
-        layoutLaser.addLayout(classLayout)
+
+        laserClass = QHBoxLayout()
+        laserClass.addLayout(scanLayout)
+        laserClass.addLayout(classLayout)
+        laserClass.setAlignment(Qt.AlignTop)
+        
+        layoutLaser = QVBoxLayout()
+        layoutLaser.addLayout(laserClass)
+        layoutLaser.addLayout(self.controlLaser)
+        layoutLaser.setAlignment(Qt.AlignBottom)
 
         # >> Specify final layout align 
         #----------------------
         laserAndVideoLayout = QHBoxLayout()
-        laserAndVideoLayout.addWidget(self.videoWidget)
+        laserAndVideoLayout.addLayout(videoLayout)
         laserAndVideoLayout.addLayout(layoutLaser)
 
         mainLayout = QVBoxLayout()
         mainLayout.addLayout(laserAndVideoLayout)
-        mainLayout.addLayout(self.control)
         mainLayout.addWidget(self.positionSlider)
         mainLayout.addWidget(self.gantt)
         mainLayout.addLayout(waveLayout)
@@ -1001,7 +1009,8 @@ class VideoPlayer(QWidget):
     #Open CSV file
     def openCsv(self):
         global classLabels,gantEnabled
-        self.box_buffer =[]
+        self.box_buffer = []
+        self.metric_buffer = []
 
         fileName,_ =  QFileDialog.getOpenFileName(self, "Open Csv ", QDir.currentPath(),"(*.csv)")
         box_buff,metrics_buff,box_action = buffer_csv(fileName)
@@ -1093,7 +1102,7 @@ class VideoPlayer(QWidget):
 
     def positionChanged(self, position):
         self.positionSlider.setValue(position)
-        self.timelabel.setText(self.label_tmp.format(position/1000))
+        self.timelabel.setText(self.label_tmp.format('Elapsed Time: ' + str(position/1000)))
         #self.timelabel.(position)
 
     def keyPressEvent(self,event):
