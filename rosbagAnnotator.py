@@ -56,9 +56,9 @@ from audioGlobals import audioGlobals
 from laserGlobals import laserGlobals
 import visualizeAudio as vA
 import ganttChartAudio as gA
+import graphicalInterfaceLaser as gL
 from graphicalInterfaceAudio import ApplicationWindow 
 import rosbagAudio 
-import newrosgui
 import rosbagDepth
 import rosbagLaser
 ''''''''''''''''''''''''''''''''''''
@@ -642,7 +642,7 @@ class VideoPlayer(QWidget):
         # >> VIDEO - DEPTH - AUDIO - LASER - GANTT CHART
         #----------------------
         self.videoWidget = VideoWidget()
-        self.laserScan = newrosgui.LS()
+        self.laserScan = gL.LS()
 
         # >> LASER
         #Define Laser Buttons
@@ -846,6 +846,7 @@ class VideoPlayer(QWidget):
             self.player.setPosition(position)
             self.mediaPlayer.play()
             self.audioPlay()
+            self.laserPlay()
             self.playButton.setEnabled(True)
 
     def depth(self, enabled):
@@ -860,6 +861,7 @@ class VideoPlayer(QWidget):
             self.player.setPosition(position)
             self.mediaPlayer.play()
             self.audioPlay()
+            self.laserPlay()
             self.playButton.setEnabled(True)
 
     # AUDIO PLAYER BUTTON FUNCTIONS

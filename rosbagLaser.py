@@ -20,7 +20,7 @@ import argparse
 import textwrap
 import math
 #import qt_laserscan
-import newrosgui
+import graphicalInterfaceLaser as gL
 
 
 programmName = os.path.basename(sys.argv[0])
@@ -86,4 +86,4 @@ def runMain(bag, bag_file):
 	#Open bag and get framerate	
 	play_bag_file(bag, '/scan')
 
-	newrosgui.run(sx, sy, bag, bag_file)
+	gL.run(sx, sy, bag, bag_file)
