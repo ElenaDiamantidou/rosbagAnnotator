@@ -17,6 +17,7 @@ import rospy
 import json
 import random
 import matplotlib
+import math
 
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
@@ -52,12 +53,14 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QHBoxLayout, QPushButton,
         QSizePolicy, QVBoxLayout, QWidget, QToolTip, QLabel, QFrame, QGridLayout, QMenu, qApp, QLineEdit)
 
 from audioGlobals import audioGlobals
+from laserGlobals import laserGlobals
 import visualizeAudio as vA
 import ganttChartAudio as gA
 from graphicalInterfaceAudio import ApplicationWindow 
 import rosbagAudio 
-import laserGui
+import newrosgui
 import rosbagDepth
+import rosbagLaser
 ''''''''''''''''''''''''''''''''''''
 
 start_point = False
@@ -67,6 +70,7 @@ annotationColors = ['#00FF00', '#FF00FF','#FFFF00','#00FFFF','#FFA500']
 gantEnabled = False
 posSlider = 0
 durationSlider = 0
+xBoxCoord = []
 
 def buffer_data(bag, input_topic, compressed):
     image_buff = []
@@ -634,18 +638,39 @@ class VideoPlayer(QWidget):
         self.box_buffer = []
         self.metric_buffer = []
 
+        # >> DEFINE WIDGETS OCJECTS
+        # >> VIDEO - DEPTH - AUDIO - LASER - GANTT CHART
+        #----------------------
         self.videoWidget = VideoWidget()
-        self.laserScan = laserGui.LS()
+        self.laserScan = newrosgui.LS()
 
         # >> LASER
         #Define Laser Buttons
         scanLayout = QHBoxLayout() 
         scanLayout.addWidget(self.laserScan)
+        # >> Video Gantt Chart
+        self.gantt = gantShow()
+        gantChart = self.gantt
+        gantChart.setFixedSize(1440, 130)
+        
 
+        # >> Define Audio annotations and gantt chart 
+        #---------------------- 
+        self.wave = vA.Waveform()
+        audioGlobals.fig = self.wave
+        self.wave.axes.get_xaxis().set_visible(False)
+        self.wave.draw()
+        self.wave.setFixedSize(1440, 185)
+        
+        self.chart = gA.Chart()
+        audioGlobals.chartFig = self.chart
+        self.chart.setFixedSize(1440, 95)
         playButtonLaser = QPushButton("Play")
         pauseButtonLaser = QPushButton("Pause")
         prevFrameButtonLaser = QPushButton("Previous")
+        prevFrameButtonLaser.setEnabled(False)
         nextFrameButtonLaser = QPushButton("Next")
+        nextFrameButtonLaser.setEnabled(False)
         stopButtonLaser = QPushButton("Stop")
         le = QLineEdit(self)
         le.setDragEnabled(True)
@@ -741,25 +766,6 @@ class VideoPlayer(QWidget):
         self.controlLaser.addLayout(self.label)
 
 
-        # >> Video Gantt Chart
-        self.gantt = gantShow()
-        gantChart = self.gantt
-        gantChart.setFixedSize(1440, 130)
-        
-
-        # >> Define Audio annotations and gantt chart 
-        #---------------------- 
-        
-        self.wave = vA.Waveform()
-        audioGlobals.fig = self.wave
-        self.wave.axes.get_xaxis().set_visible(False)
-        self.wave.draw()
-        self.wave.setFixedSize(1440, 185)
-        
-        
-        self.chart = gA.Chart()
-        audioGlobals.chartFig = self.chart
-        self.chart.setFixedSize(1440, 95)
 
         # >> Define Audio Player buttons 
         #---------------------- 
@@ -767,11 +773,13 @@ class VideoPlayer(QWidget):
         pauseButtonAudio = QPushButton("Pause")
         stopButtonAudio = QPushButton("Stop")
 
+
         # >> Define Audio layouts 
         #---------------------- 
         waveLayout = QVBoxLayout()
         waveLayout.addWidget(self.wave)
         waveLayout.addWidget(self.chart)
+
 
         # >> Laser Buttons Layout
         #----------------------
@@ -920,50 +928,50 @@ class VideoPlayer(QWidget):
     # >> LASER BUTTON FUNCTIONS
 
     def laserPlay(self):
-        global scan_widget
-        scan_widget.ptime()
+        self.laserScan.ptime()
+        laserGlobals.scan_widget = self.laserScan
 
     def laserPause(self):
-        global timer
-        timer.stop()
+        laserGlobals.timer.stop()
 
     def laserPrevious(self):
-        global cnt,ax,fw,annot,samex, samey, listofpointsx, listofpointsy,annotID
-        if (cnt > 0):
-            cnt = cnt-1
-            ax.clear()
-            ax.axis('equal')
-            ax.plot(annot[cnt].samex,annot[cnt].samey, 'bo')
-            if not annot[cnt].listofpointsx == []:
-                for j in range(len(annot[cnt].annotID)):
-                    ax.plot(annot[cnt].listofpointsx[j],annot[cnt].listofpointsy[j],color=annot[cnt].annotID[j],marker='o')
-            fw.draw()
+        global annot,samex, samey, listofpointsx, listofpointsy,annotID
+
+        if (laserGlobals.cnt > 0):
+            laserGlobals.cnt = laserGlobals.cnt-1
+            self.laserScan.axes.clear()
+            self.laserScan.axes.axis('equal')
+            self.laserScan.axes.plot(annot[cnt].samex,annot[cnt].samey, 'bo')
+            if not laserGlobals.annot[laserGlobals.cnt].laserGlobals.listofpointsx == []:
+                for j in range(len(laserGlobals.annot[laserGlobals.cnt].laserGlobals.annotID)):
+                    self.axes.plot(laserGlobals.annot[laserGlobals.cnt].laserGlobals.listofpointsx[j],laserGlobals.annot[laserGlobals.cnt].laserGlobals.listofpointsy[j],color=laserGlobals.annot[laserGlobals.cnt].laserGlobals.annotID[j],marker='o')
+            self.laserScan.draw()
         else:
-            ax.clear()
-            fw.draw()
+            self.laserScan.axes.clear()
+            self.laserScan.draw()
 
     def laserNext(self):
-        global cnt,ax,fw, annot,samex, samey, listofpointsx, listofpointsy,annotID, colour_index
-        if (cnt<len(annot)):
-            cnt = cnt+1
-            ax.clear()
-            ax.axis('equal')
+        global annot,samex, samey, listofpointsx, listofpointsy,annotID, colour_index
+
+        if (laserGlobals.cnt<len(laserGlobalsannot)):
+            laserGlobals.cnt = laserGlobals.cnt+1
+            self.laserScan.axes.clear()
+            self.laserScan.axes.axis('equal')
             colour_index = 0
-            ax.plot(annot[cnt].samex,annot[cnt].samey,'bo')
-            if not annot[cnt].listofpointsx == []:
-                for j in range(len(annot[cnt].annotID)):
-                    ax.plot(annot[cnt].listofpointsx[j],annot[cnt].listofpointsy[j],color=annot[cnt].annotID[j],marker='o')
-            fw.draw()
+            self.laserScan.plot(annot[cnt].laserGlobals.samex,laserGlobals.annot[laserGlobals.cnt].laserGlobals.samey,'bo')
+            if not laserGlobals.annot[laserGlobals.cnt].listofpointsx == []:
+                for j in range(len(laserGlobals.annot[cnt].annotID)):
+                    self.laserScan.axes.plot(laserGlobals.annot[cnt].laserGlobals.listofpointsx[j],laserGlobals.annot[laserGlobals.cnt].laserGlobals.listofpointsy[j],color=laserGlobals.annot[laserGlobals.cnt].laserGlobals.annotID[j],marker='o')
+            self.laserScan.draw()
         else:
-            ax.clear()
-            fw.draw()
+            self.laserScan.axes.clear()
+            self.laserScan.draw()
 
     def laserStop(self):
-        global cnt,timer,ax,fw
-        cnt = 0
-        timer.stop()
-        ax.clear()
-        fw.draw()
+        laserGlobals.cnt = 0
+        laserGlobals.timer.stop()
+        self.laserScan.axes.clear()
+        self.laserScan.draw()
 
     def videoPosition(self):
         self.videoTime = self.mediaPlayer.position()
@@ -972,14 +980,16 @@ class VideoPlayer(QWidget):
         global imageBuffer,framerate
 
         fileName,_ = QFileDialog.getOpenFileName(self, "Open Bag", QDir.currentPath(),"(*.bag)")
-        print str(fileName)
 
         if not fileName:
             pass
         else:
             try:
                 bag = rosbag.Bag(fileName)
+                # Write audio and depth -> IMPORTANT
+                # when audio change remember to correct bag file NOT bag file name !!!
                 rosbagAudio.runMain('rosbags/2016-07-04-16-19-14.bag')
+                rosbagLaser.runMain(bag, str(fileName))
                 rosbagDepth.runMain(bag)
             except:
                 self.errorMessages(0)
@@ -1101,11 +1111,13 @@ class VideoPlayer(QWidget):
             self.videoPosition()
             self.mediaPlayer.pause()
             self.audioPause()
+            self.laserPause()
             self.time_ = self.videoTime
 
         else:
             self.mediaPlayer.play()
             self.audioPlay()
+            self.laserPlay()
 
         # >> Get slider position for bound box
         posSlider = self.positionSlider.value()
@@ -1195,6 +1207,8 @@ class VideoPlayer(QWidget):
 #Holds the bound box parameters
 class boundBox(object):
     def __init__(self,parent=None):
+        global xBoxCoord
+
         super(boundBox, self).__init__()
         self.timestamp = []
         self.box_Id = []
@@ -1206,6 +1220,8 @@ class boundBox(object):
         self.box_Id.append(key[0])
         self.box_Param.append(key[1:])
         self.annotation.append(classify)
+        
+        self.calcAngle()
 
     def removeAllBox(self):
         self.timestamp[:] = []
@@ -1223,6 +1239,30 @@ class boundBox(object):
         if boxid < len(self.annotation):
             self.annotation.pop(boxid)
         self.annotation.insert(boxid,classify)
+
+    def calcAngle(self):
+        # let's say that camera angle is 57 degrees..
+        camAngle = 58
+        camAngleRadians = math.radians(camAngle)
+        imWidth = 640 #pixels
+
+        for index in range(len(self.box_Param)):
+            z = (imWidth/2)/ sin(camAngleRadians/2)
+            #Construct the axis of triangle
+            MK = math.sqrt(pow(z,2) - pow(imWidth/2,2))
+            x1 = self.box_Param[index][0]
+            x2 = self.box_Param[index][0] + self.box_Param[index][2]
+            
+            startPoint = abs(x1 - (imWidth/2))
+            x1Angle = math.atan(startPoint/MK)
+            x1Angle = x1Angle + (camAngleRadians/2)
+
+            endPoint = abs(x2 - (imWidth/2))
+            x2Angle = math.atan(endPoint/MK)
+            x2Angle = x2Angle + (camAngleRadians/2)
+
+            #angle = abs(math.degrees(x2Angle - x1Angle))
+            #print math.degrees(x1Angle), math.degrees(x2Angle)
 
 class videoGantChart(FigureCanvas):
     def __init__(self, parent=None,width=15,height=1,dpi=100):
@@ -1316,6 +1356,7 @@ class gantShow(videoGantChart):
                 return annotationColors[index % len(annotationColors)]
             elif action == 'Clear':
                 return '#0000FF'
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

@@ -94,11 +94,6 @@ def depth_bag_file(bagFile):
     topic_type = topic['type']
     message_count = topic['messages']
 
-    #Messages for test
-    print "\nRosbag topics found: "
-    for top in topics:
-        print "\t- ", top["topic"], "\n\t\t-Type: ", topic["type"],"\n\t\t-Fps: ", topic["frequency"]
-
     #Checking if the topic is compressed
     if 'CompressedImage' in topic_type:
         compressed = True
