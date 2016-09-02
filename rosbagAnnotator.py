@@ -651,7 +651,7 @@ class VideoPlayer(QWidget):
         # >> Video Gantt Chart
         self.gantt = gantShow()
         gantChart = self.gantt
-        gantChart.setFixedSize(1440, 130)
+        gantChart.setFixedSize(1300, 130)
         
 
         # >> Define Audio annotations and gantt chart 
@@ -660,24 +660,17 @@ class VideoPlayer(QWidget):
         audioGlobals.fig = self.wave
         self.wave.axes.get_xaxis().set_visible(False)
         self.wave.draw()
-        self.wave.setFixedSize(1440, 185)
+        self.wave.setFixedSize(1300, 185)
         
         self.chart = gA.Chart()
         audioGlobals.chartFig = self.chart
-        self.chart.setFixedSize(1440, 95)
+        self.chart.setFixedSize(1300, 95)
         playButtonLaser = QPushButton("Play")
         pauseButtonLaser = QPushButton("Pause")
         prevFrameButtonLaser = QPushButton("Previous")
-        prevFrameButtonLaser.setEnabled(False)
         nextFrameButtonLaser = QPushButton("Next")
-        nextFrameButtonLaser.setEnabled(False)
         stopButtonLaser = QPushButton("Stop")
-        le = QLineEdit(self)
-        le.setDragEnabled(True)
-        addButtonLaser = QPushButton('Add', self)
 
-        classes = QComboBox()
-        classes.addItem('Classes')
 
         buttonLayoutLaser = QHBoxLayout()
         buttonLayoutLaser.addWidget(playButtonLaser)
@@ -687,12 +680,6 @@ class VideoPlayer(QWidget):
         buttonLayoutLaser.addWidget(stopButtonLaser)
         buttonLayoutLaser.setAlignment(Qt.AlignLeft)
 
-        classLayout = QVBoxLayout()
-        classLayout.addWidget(classes)
-        classLayout.addWidget(le)
-        classLayout.addWidget(addButtonLaser)
-        classLayout.setAlignment(Qt.AlignTop)
-
 
         #Define Connections
         playButtonLaser.clicked.connect(self.laserPlay)
@@ -700,11 +687,6 @@ class VideoPlayer(QWidget):
         prevFrameButtonLaser.clicked.connect(self.laserPrevious)
         nextFrameButtonLaser.clicked.connect(self.laserNext)
         stopButtonLaser.clicked.connect(self.laserStop)
-        #annotationButtonLaser.clicked.connect(self.laserAnnotation)
-        #saveButtonLaser.clicked.connect(self.laserSave)
-        #classes.activated[str].connect(self.chooseClass)
-        #addButton.clicked.connect(self.showObject)
-        # >> END LASER
 
         # >> Set Fix Size at Video Widget and LaserScan
         # >> (Half Gui)
@@ -792,8 +774,7 @@ class VideoPlayer(QWidget):
 
         laserClass = QHBoxLayout()
         laserClass.addLayout(scanLayout)
-        laserClass.addLayout(classLayout)
-        laserClass.setAlignment(Qt.AlignTop)
+        #laserClass.setAlignment(Qt.AlignTop)
         
         layoutLaser = QVBoxLayout()
         layoutLaser.addLayout(laserClass)
@@ -937,37 +918,23 @@ class VideoPlayer(QWidget):
         laserGlobals.timer.stop()
 
     def laserPrevious(self):
-        global annot,samex, samey, listofpointsx, listofpointsy,annotID
-
-        if (laserGlobals.cnt > 0):
+        if (laserGlobals.cnt>0):
             laserGlobals.cnt = laserGlobals.cnt-1
-            self.laserScan.axes.clear()
-            self.laserScan.axes.axis('equal')
-            self.laserScan.axes.plot(annot[cnt].samex,annot[cnt].samey, 'bo')
-            if not laserGlobals.annot[laserGlobals.cnt].laserGlobals.listofpointsx == []:
-                for j in range(len(laserGlobals.annot[laserGlobals.cnt].laserGlobals.annotID)):
-                    self.axes.plot(laserGlobals.annot[laserGlobals.cnt].laserGlobals.listofpointsx[j],laserGlobals.annot[laserGlobals.cnt].laserGlobals.listofpointsy[j],color=laserGlobals.annot[laserGlobals.cnt].laserGlobals.annotID[j],marker='o')
-            self.laserScan.draw()
+            laserGlobals.ok = 'Yes'
+            laserGlobals.scan_widget.drawLaserScan()
         else:
-            self.laserScan.axes.clear()
-            self.laserScan.draw()
+            laserGlobals.ok = 'No'
+            laserGlobals.scan_widget.drawLaserScan()
 
     def laserNext(self):
-        global annot,samex, samey, listofpointsx, listofpointsy,annotID, colour_index
-
-        if (laserGlobals.cnt<len(laserGlobalsannot)):
+        colour_index = 0
+        if (laserGlobals.cnt<len(laserGlobals.annot)):
             laserGlobals.cnt = laserGlobals.cnt+1
-            self.laserScan.axes.clear()
-            self.laserScan.axes.axis('equal')
-            colour_index = 0
-            self.laserScan.plot(annot[cnt].laserGlobals.samex,laserGlobals.annot[laserGlobals.cnt].laserGlobals.samey,'bo')
-            if not laserGlobals.annot[laserGlobals.cnt].listofpointsx == []:
-                for j in range(len(laserGlobals.annot[cnt].annotID)):
-                    self.laserScan.axes.plot(laserGlobals.annot[cnt].laserGlobals.listofpointsx[j],laserGlobals.annot[laserGlobals.cnt].laserGlobals.listofpointsy[j],color=laserGlobals.annot[laserGlobals.cnt].laserGlobals.annotID[j],marker='o')
-            self.laserScan.draw()
+            laserGlobals.ok = 'Yes'
+            laserGlobals.scan_widget.drawLaserScan()
         else:
-            self.laserScan.axes.clear()
-            self.laserScan.draw()
+            laserGlobals.ok = 'No'
+            laserGlobals.scan_widget.drawLaserScan()
 
     def laserStop(self):
         laserGlobals.cnt = 0
@@ -1134,7 +1101,10 @@ class VideoPlayer(QWidget):
 
     def positionChanged(self, position):
         self.positionSlider.setValue(position)
+
         self.timelabel.setText(self.label_tmp.format('Elapsed Time: ' + str(position/1000)))
+        laserGlobals.cnt = position/100
+
         #self.timelabel.(position)
 
     def keyPressEvent(self,event):
@@ -1243,17 +1213,30 @@ class boundBox(object):
         self.annotation.insert(boxid,classify)
 
     def calcAngle(self):
-        # let's say that camera angle is 57 degrees..
+        # let's say that camera angle is 58 degrees..
         camAngle = 58
         camAngleRadians = math.radians(camAngle)
         imWidth = 640 #pixels
 
         for index in range(len(self.box_Param)):
+            # CENTRALIZE camera and laser
+            # xCamera, yCamera, zCamera <--> xLaser, yLaser, zLaser IN METERS
+            # zCamera and zLaser doesn't matter
+
+            xCamera = 0
+            xLaser = 0
+
+            # Convert meters to pixels 
+            # 1m = 3779.527559px ; 1px = 0.000265m
+            xCamera = xCamera * 3779.527559
+            xLaser = xLaser * 3779.527559
+            diff = xLaser - xCamera
+
             z = (imWidth/2)/ sin(camAngleRadians/2)
             #Construct the axis of triangle
             MK = math.sqrt(pow(z,2) - pow(imWidth/2,2))
-            x1 = self.box_Param[index][0]
-            x2 = self.box_Param[index][0] + self.box_Param[index][2]
+            x1 = self.box_Param[index][0] + diff
+            x2 = self.box_Param[index][0] + self.box_Param[index][2] + diff
             
             startPoint = abs(x1 - (imWidth/2))
             x1Angle = math.atan(startPoint/MK)
@@ -1265,6 +1248,14 @@ class boundBox(object):
 
             #angle = abs(math.degrees(x2Angle - x1Angle))
             #print math.degrees(x1Angle), math.degrees(x2Angle)
+
+            # angle to laser 270 degrees
+            x1 = x1 + math.radians(105)
+            x2 = x2 + math.radians(105)
+
+
+
+
 
 class videoGantChart(FigureCanvas):
     def __init__(self, parent=None,width=15,height=1,dpi=100):
@@ -1362,8 +1353,7 @@ class gantShow(videoGantChart):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    #rosbagAudio.runMain('rosbags/2016-07-22-13-25-52.bag')
-    #rosbagAudio.runMain('test.bag')
+
     player = VideoPlayer()
     player.resize(640,720)
     player.show()

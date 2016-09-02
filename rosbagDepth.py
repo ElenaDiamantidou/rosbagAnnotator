@@ -112,6 +112,12 @@ def runMain(bagFileName):
 
     fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
     height, width = imageBuffer[0].shape
+    '''
+    print imageBuffer[150][10][:]
+    print '------------------'
+    print np.where(imageBuffer == 255)
+    '''
+    
     # 0 for grayscale image 
     # non zero values for color frames
     video_writer = cv2.VideoWriter("myvidDepth.avi", fourcc, framerate, (width,height), 0)

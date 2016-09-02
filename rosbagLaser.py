@@ -80,8 +80,8 @@ def runMain(bag, bag_file):
 	#Create results file
 	feature_file = bag_file.split(".")[0].split("/")[-1] + "_RESULT"
 
-	#if os.path.exists(feature_file) and not append:
-	#	os.remove(feature_file)
+	if os.path.exists(feature_file) and not append:
+		os.remove(feature_file)
 
 	#Open bag and get framerate	
 	play_bag_file(bag, '/scan')

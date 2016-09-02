@@ -28,7 +28,7 @@ progname = os.path.basename(sys.argv[0])
 
 #Arxikopoihsh global timwn
 #Arxikopoihsh metritwn
-cnt = 0
+laserGlobals.cnt = 0
 timer = None
 #Arxikopoihsh grafikwn parastasewn
 ax = None
@@ -73,10 +73,42 @@ class Window(FigureCanvas):
 
         FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
+        fig.canvas.mpl_connect('button_press_event', onClick)
 
     def icon(self):
         pass
 
+def onClick(event):
+
+    global firstclick, c1, secondclick, c2,  thirdclick
+
+    x = event.x
+    y = event.y
+    if event.button == Qt.LeftButton:
+            if firstclick == False:
+                if event.inaxes is not None:
+                    c1 = [event.xdata,event.ydata]
+                    firstclick = True
+            elif secondclick == False:
+                if event.inaxes is not None:
+                    c2 = [event.xdata,event.ydata]
+                    if (c2[0]<c1[0]):
+                        temp_c = c2
+                        c2 = c1
+                        c1 = temp_c
+                    secondclick = True
+                    laserGlobals.ok = 'Rect'
+                    laserGlobals.scan_widget.drawLaserScan()
+            elif ((not thirdclick) and (secondclick)):
+                #if event.button == Qt.RightButton:
+                    #na emfanizei to menu me tis classes 
+                    #na exei kai tin epilogi pros9ikis class
+                if event.button == Qt.LeftButton:
+                    laserGlobals.ok = 'Yes'
+                    firstclick = False
+                    secondclick = False
+                    if ((laserGlobals.cnt>0) and (laserGlobals.cnt<len(laserGlobals.annot))):
+                        laserGlobals.scan_widget.drawLaserScan()
 
 class LS(Window):
 
@@ -89,54 +121,54 @@ class LS(Window):
 
     def icon(self):
 
-        global cnt,annot,ok
-
-        if(cnt<len(annot)):
-            ok = 'Yes'
+        global ok
+        #print laserGlobals.cnt
+        if(laserGlobals.cnt<len(laserGlobals.annot)):
+            laserGlobals.ok = 'Yes'
             laserGlobals.scan_widget.drawLaserScan()
-            cnt += 1
-        if (cnt == len(annot)):
-            cnt=0
+            laserGlobals.cnt += 1
+        if (laserGlobals.cnt == len(laserGlobals.annot)):
+            laserGlobals.cnt=0
             laserGlobals.timer.stop()
-            ok = 'No'
+            laserGlobals.ok = 'No'
             laserGlobals.scan_widget.drawLaserScan()
 
     def drawLaserScan(self):
 
-        global ax,annot,cnt,samex,samey,listofpointsx,listofpointsy,fw,ok,c1,c2,colorName,firstclick,secondclick,colourID,colorName
+        global ax,samex,samey,listofpointsx,listofpointsy,fw,ok,c1,c2,colorName,firstclick,secondclick,colourID,colorName
 
-        if (ok == 'Yes'):
+        if (laserGlobals.ok == 'Yes'):
             self.axes.clear()
             self.axes.axis('equal')
-            self.axes.plot(annot[cnt].samex,annot[cnt].samey,'bo')
-            if not annot[cnt].listofpointsx == []:
-                for j in range(len(annot[cnt].colourID)):
-                    self.axes.plot(annot[cnt].listofpointsx[j],annot[cnt].listofpointsy[j],color=annot[cnt].colourID[j],marker='o')
+            self.axes.plot(laserGlobals.annot[laserGlobals.cnt].samex,laserGlobals.annot[laserGlobals.cnt].samey,'bo')
+            if not laserGlobals.annot[laserGlobals.cnt].listofpointsx == []:
+                for j in range(len(laserGlobals.annot[laserGlobals.cnt].colourID)):
+                    self.axes.plot(laserGlobals.annot[laserGlobals.cnt].listofpointsx[j],laserGlobals.annot[laserGlobals.cnt].listofpointsy[j],color=laserGlobals.annot[laserGlobals.cnt].colourID[j],marker='o')
             fw.draw()
-        elif (ok == 'Rect'):
-            ax.axis('equal')
-            if (cnt>0) and (cnt<len(annot)):
+        elif (laserGlobals.ok == 'Rect'):
+            self.axes.axis('equal')
+            if (laserGlobals.cnt>0) and (laserGlobals.cnt<len(laserGlobals.annot)):
                 self.axes.plot([c1[0],c2[0]],[c1[1],c1[1]],'r')
                 self.axes.plot([c2[0],c2[0]],[c1[1],c2[1]],'r')
                 self.axes.plot([c2[0],c1[0]],[c2[1],c2[1]],'r')
                 self.axes.plot([c1[0],c1[0]],[c2[1],c1[1]],'r')
                 fw.draw()
-        elif (ok == 'No'):
+        elif (laserGlobals.ok == 'No'):
             self.axes.clear()
             fw.draw()
 
     def training(self):
 
-        global annot,samex,samey,c1,c2,colorName,colours,colour_index,colourID,listofpointsx,listofpointsy,ok,firstclick,secondclick,cnt, bag_file, data,selections
+        global annot,samex,samey,c1,c2,colorName,colours,colour_index,colourID,listofpointsx,listofpointsy,ok,firstclick,secondclick, bag_file, data,selections
 
-        for i in range(len(annot[cnt].samex)):
-            if ((annot[cnt].samex[i] >= c1[0]) and (annot[cnt].samex[i] <= c2[0]) and ((annot[cnt].samey[i] >= c2[1]) and (annot[cnt].samey[i] <= c1[1]))):
+        for i in range(len(annot[laserGlobals.cnt].samex)):
+            if ((annot[laserGlobals.cnt].samex[i] >= c1[0]) and (annot[laserGlobals.cnt].samex[i] <= c2[0]) and ((annot[laserGlobals.cnt].samey[i] >= c2[1]) and (annot[laserGlobals.cnt].samey[i] <= c1[1]))):
                 colorName = colours[colour_index]
-                annot[cnt].colourID.append(colorName)
-                annot[cnt].listofpointsx.append(annot[cnt].samex[i])
-                annot[cnt].listofpointsy.append(annot[cnt].samey[i])
-                #annot[cnt].samex = [x for x in annot[cnt].samex if x not in annot[cnt].listofpointsx]
-                #annot[cnt].samey = [y for y in annot[cnt].samey if y not in annot[cnt].listofpointsy]
+                annot[laserGlobals.cnt].colourID.append(colorName)
+                annot[laserGlobals.cnt].listofpointsx.append(annot[laserGlobals.cnt].samex[i])
+                annot[laserGlobals.cnt].listofpointsy.append(annot[laserGlobals.cnt].samey[i])
+                #annot[laserGlobals.cnt].samex = [x for x in annot[laserGlobals.cnt].samex if x not in annot[laserGlobals.cnt].listofpointsx]
+                #annot[laserGlobals.cnt].samey = [y for y in annot[laserGlobals.cnt].samey if y not in annot[laserGlobals.cnt].listofpointsy]
         ok = 'Yes'
         laserGlobals.scan_widget.drawLaserScan()
         colour_index+=1
@@ -213,7 +245,6 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         classes.activated[str].connect(self.chooseClass)
         addButton.clicked.connect(self.showObject)
 
-        fig.canvas.mpl_connect('button_press_event', self.onClick)
 
         self.main_widget.setFocus()
         self.setCentralWidget(self.main_widget)
@@ -227,64 +258,34 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         timer.stop()
 
     def bprevious(self):
-        global cnt, ok, scan_widget
-        if (cnt>0):
-            cnt = cnt-1
+        global ok
+
+        if (laserGlobals.cnt>0):
+            laserGlobals.cnt = laserGlobals.cnt-1
             ok = 'Yes'
-            scan_widget.drawLaserScan()
+            laserGlobals.scan_widget.drawLaserScan()
         else:
             ok = 'No'
-            scan_widget.drawLaserScan()
+            laserGlobals.scan_widget.drawLaserScan()
 
     def bnext(self):
-        global cnt, annot, ok, scan_widget,colour_index
+        global  annot, ok, scan_widget,colour_index
         colour_index = 0
-        if (cnt<len(annot)):
-            cnt = cnt+1
+        if (laserGlobals.cnt<len(annot)):
+            laserGlobals.cnt = laserGlobals.cnt+1
             ok = 'Yes'
-            scan_widget.drawLaserScan()
+            laserGlobals.scan_widget.drawLaserScan()
         else:
             ok = 'No'
-            scan_widget.drawLaserScan()
+            laserGlobals.scan_widget.drawLaserScan()
 
     def bstop(self):
-        global cnt,timer,ax,fw
-        cnt = 0
+        global timer,ax,fw
+        laserGlobals.cnt = 0
         timer.stop()
         ax.clear()
         fw.draw()
 
-    def onClick(self, event):
-
-        global firstclick, c1, secondclick, c2, ok, scan_widget, thirdclick
-
-        x = event.x
-        y = event.y
-        if event.button == Qt.LeftButton:
-                if firstclick == False:
-                    if event.inaxes is not None:
-                        c1 = [event.xdata,event.ydata]
-                        firstclick = True
-                elif secondclick == False:
-                    if event.inaxes is not None:
-                        c2 = [event.xdata,event.ydata]
-                        if (c2[0]<c1[0]):
-                            temp_c = c2
-                            c2 = c1
-                            c1 = temp_c
-                        secondclick = True
-                        ok = 'Rect'
-                        scan_widget.drawLaserScan()
-                elif ((not thirdclick) and (secondclick)):
-                    #if event.button == Qt.RightButton:
-                        #na emfanizei to menu me tis classes 
-                        #na exei kai tin epilogi pros9ikis class
-                    if event.button == Qt.LeftButton:
-                        ok = 'Yes'
-                        firstclick = False
-                        secondclick = False
-                        if ((cnt>0) and (cnt<len(annot))):
-                            scan_widget.drawLaserScan()
 
     def showObject(self):
         global le,selections,classes,objs,sel_pos
@@ -297,7 +298,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         global scan_widget,txt,colour_index,colours,annot,selections
         txt = text
         if ((txt != 'Classes') and secondclick):
-            annot[cnt].annotID.append(txt)
+            annot[laserGlobals.cnt].annotID.append(txt)
             colour_index = selections.index(txt)%(len(colours))
             scan_widget.training()
 
@@ -405,13 +406,13 @@ def run(laserx,lasery,bagFile, filename):
                             row[5][i] = str(row[5][i])
 
                     la = laserAnn(row[0], row[1], row[2], row[3], row[4], row[5])
-                    annot.append(la)
+                    laserGlobals.annot.append(la)
     else:
         for i in range(len(laserx)):
             s1 = laserx[i].tolist()
             s2 = lasery[i].tolist()
             la = laserAnn(samex_=s1,samey_=s2)
-            annot.append(la)
+            laserGlobals.annot.append(la)
 
     #qApp = QtWidgets.QApplication(sys.argv)
 
