@@ -86,12 +86,23 @@ def buffer_data(bag, input_topic, compressed):
 
 
 def depth_bag_file(bagFile):
-    info_dict = yaml.load(bagFile._get_yaml_info())
-    topics = info_dict['topics']
-    topic = topics[1]
+    topicKey = 0
+    topic = 0
+    flag = False
+    bag = bagFile
+    info_dict = yaml.load(bag._get_yaml_info())
+    topics =  info_dict['topics']
+
+    for key in range(len(topics)):
+        if topics[key]['topic'] == '/camera/depth/image_raw':
+            topicKey = key
+
+    topic = topics[topicKey]
+    messages =  topic['messages']
     duration = info_dict['duration']
     topic_type = topic['type']
-    message_count = topic['messages']
+    frequency = topic['frequency']
+
 
     #Checking if the topic is compressed
     if 'CompressedImage' in topic_type:
@@ -100,9 +111,9 @@ def depth_bag_file(bagFile):
         compressed = False
 
     #Get framerate
-    framerate = message_count/duration
+    framerate = messages/duration
 
-    return message_count,duration,compressed, framerate
+    return messages,duration,compressed, framerate
 
 def runMain(bagFileName):
 #if __name__ == '__main__':
