@@ -40,7 +40,7 @@ def audio_bag_file(bagFile):
     topicKey = 0
     topic = 0
     flag = False
-    bag = rosbag.Bag(bagFile)
+    bag = bagFile
     info_dict = yaml.load(bag._get_yaml_info())
     topics =  info_dict['topics']
 
@@ -53,6 +53,7 @@ def audio_bag_file(bagFile):
     duration = info_dict['duration']
     topic_type = topic['type']
     frequency = topic['frequency']
+
     audioCheck = topic['topic']
     #Checking if the topic is audio
     if 'audio_common_msgs' in topic_type:
@@ -73,8 +74,9 @@ def audio_bag_file(bagFile):
     print "total duration {0:.2f}".format(duration)
     print "average bit rate {0:.2f}".format(float(nBytes) * 8.0 / float(duration))
 
-    bag.close()    
-    return audio
+    frequency = frequency * 1000
+    #bag.close()    
+    return audio, frequency
 
 #save mp3 file
 def write_mp3_file(audioData, bagFile):
@@ -85,10 +87,10 @@ def write_mp3_file(audioData, bagFile):
     return mp3FileName
 
 #convert mp3 to wav
-def mp3_to_wav(mp3Path):
+def mp3_to_wav(mp3Path, frequency):
     #call arg not file...
     wavFileName = mp3Path.replace(".mp3",".wav")
-    subprocess.call(['ffmpeg', '-i', mp3Path,'-y', '-ar', '16000', '-ac', '1', wavFileName])
+    subprocess.call(['ffmpeg', '-i', mp3Path, '-y', '-ar', str(frequency), '-ac', '1', wavFileName])
     return wavFileName
 
 #play wav file
@@ -124,13 +126,13 @@ def createWaveform(wavFileName):
 
 
 #main
-def runMain(bagFileName):
+def runMain(bag, bagFileName):
     #read bag file
     audioGlobals.bagFile = bagFileName
-    audioData = audio_bag_file(audioGlobals.bagFile) 
+    audioData, frequency = audio_bag_file(bag) 
     # get audio data 
     mp3FileName = write_mp3_file(audioData, audioGlobals.bagFile)
-    audioGlobals.wavFileName = mp3_to_wav(mp3FileName)
+    audioGlobals.wavFileName = mp3_to_wav(mp3FileName, frequency)
     runFunction.run(audioGlobals.wavFileName, audioGlobals.bagFile)
 
 

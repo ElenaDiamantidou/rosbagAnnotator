@@ -18,6 +18,7 @@ import json
 import random
 import matplotlib
 import math
+import time
 
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
@@ -132,17 +133,26 @@ def buffer_csv(csv_file):
         return False,False,False
 
 def get_bag_metadata(bag):
-    info_dict       = yaml.load(bag._get_yaml_info())
-    topics             = info_dict['topics']
-    topic            = topics[1]
-    duration       = info_dict['duration']
-    topic_type       = topic['type']
-    message_count = topic['messages']
+    topicKey = 0
+    topic = 0
+    flag = False
+    info_dict = yaml.load(bag._get_yaml_info())
+    topics =  info_dict['topics']
+
+    for key in range(len(topics)):
+        if topics[key]['topic'] == '/camera/rgb/image_raw':
+            topicKey = key
+
+    topic = topics[topicKey]
+    messages =  topic['messages']
+    duration = info_dict['duration']
+    topic_type = topic['type']
+    frequency = topic['frequency']
 
     #Messages for test
     print "\nRosbag topics found: "
     for top in topics:
-        print "\t- ", top["topic"], "\n\t\t-Type: ", topic["type"],"\n\t\t-Fps: ", topic["frequency"]
+        print "\t- ", top["topic"], "\n\t\t-Type: ", top["type"],"\n\t\t-Fps: ", top["frequency"]
 
     #Checking if the topic is compressed
     if 'CompressedImage' in topic_type:
@@ -151,9 +161,10 @@ def get_bag_metadata(bag):
         compressed = False
 
     #Get framerate
-    framerate = message_count/duration
+    framerate = messages/duration
+    #framerate = 27
 
-    return message_count,duration,compressed, framerate
+    return messages,duration,compressed, framerate
 
 
 class VideoWidgetSurface(QAbstractVideoSurface):
@@ -196,7 +207,6 @@ class VideoWidgetSurface(QAbstractVideoSurface):
             return False
 
     def stop(self):
-        
         self.currentFrame = QVideoFrame()
         self.targetRect = QRect()
         QAbstractVideoSurface.stop(self)
@@ -956,10 +966,10 @@ class VideoPlayer(QWidget):
             try:
                 bag = rosbag.Bag(fileName)
                 # Write audio and depth -> IMPORTANT
-                # when audio change remember to correct bag file NOT bag file name !!!
-                rosbagAudio.runMain('rosbags/2016-07-04-16-19-14.bag')
-                rosbagLaser.runMain(bag, str(fileName))
+                rosbagAudio.runMain(bag, str(fileName))
+                #rosbagLaser.runMain(bag, str(fileName))
                 rosbagDepth.runMain(bag)
+                # when audio change remember to correct bag file NOT bag file name !!!
             except:
                 self.errorMessages(0)
 
@@ -1084,8 +1094,8 @@ class VideoPlayer(QWidget):
             self.time_ = self.videoTime
 
         else:
-            self.mediaPlayer.play()
             self.audioPlay()
+            self.mediaPlayer.play()
             self.laserPlay()
 
         # >> Get slider position for bound box
