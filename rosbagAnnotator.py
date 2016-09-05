@@ -42,6 +42,7 @@ from matplotlib.figure import Figure
 import matplotlib.transforms as transforms
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap, BoundaryNorm
+from termcolor import colored
 
 
 ''''''''''''''''''''''''''''''''''''
@@ -73,6 +74,8 @@ posSlider = 0
 durationSlider = 0
 xBoxCoord = []
 
+depthFileName = None
+rgbFileName = None
 def buffer_data(bag, input_topic, compressed):
     image_buff = []
     time_buff  = []
@@ -150,9 +153,9 @@ def get_bag_metadata(bag):
     frequency = topic['frequency']
 
     #Messages for test
-    print "\nRosbag topics found: "
-    for top in topics:
-        print "\t- ", top["topic"], "\n\t\t-Type: ", top["type"],"\n\t\t-Fps: ", top["frequency"]
+    #print "\nRosbag topics found: "
+    #for top in topics:
+        #print "\t- ", top["topic"], "\n\t\t-Type: ", top["type"],"\n\t\t-Fps: ", top["frequency"]
 
     #Checking if the topic is compressed
     if 'CompressedImage' in topic_type:
@@ -826,13 +829,15 @@ class VideoPlayer(QWidget):
     #----------------------
 
     def rgbVideo(self, enabled):
+        global rgbFileName
+        global frameCounter
+        
         if enabled:
-            global frameCounter
 
             self. depthEnable = False
             self.rgbEnable = True
             position = self.mediaPlayer.position()
-            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath('myvid.avi'))))
+            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(rgbFileName))))
             self.mediaPlayer.setPosition(position)
             self.player.setPosition(position)
             self.mediaPlayer.play()
@@ -841,13 +846,15 @@ class VideoPlayer(QWidget):
             self.playButton.setEnabled(True)
 
     def depth(self, enabled):
+        global depthFileName
         global frameCounter
+
         if enabled:
 
             self.rgbEnable = False
             self.depthEnable = True
             position = self.mediaPlayer.position()
-            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath('myvidDepth.avi'))))
+            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(depthFileName))))
             self.mediaPlayer.setPosition(position)
             self.player.setPosition(position)
             self.mediaPlayer.play()
@@ -957,6 +964,7 @@ class VideoPlayer(QWidget):
 
     def openFile(self):
         global imageBuffer,framerate
+        global depthFileName, rgbFileName
 
         fileName,_ = QFileDialog.getOpenFileName(self, "Open Bag", QDir.currentPath(),"(*.bag)")
 
@@ -967,49 +975,60 @@ class VideoPlayer(QWidget):
                 bag = rosbag.Bag(fileName)
                 # Write audio and depth -> IMPORTANT
                 rosbagAudio.runMain(bag, str(fileName))
-                rosbagDepth.runMain(bag)
+                depthFileName = rosbagDepth.runMain(bag, str(fileName))
+                #rosbagLaser.runMain(bag, str(fileName))
                 # when audio change remember to correct bag file NOT bag file name !!!
             except:
                 self.errorMessages(0)
-            rosbagLaser.runMain(bag, str(fileName))
 
-            #Get bag metadata
-            (self.message_count,self.duration,compressed, framerate) = get_bag_metadata(bag)
-            #Buffer the rosbag, boxes, timestamps
-            (imageBuffer, self.time_buff) = buffer_data(bag, "/camera/rgb/image_raw", compressed)
-            fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
-            height, width, bytesPerComponent = imageBuffer[0].shape
-            video_writer = cv2.VideoWriter("myvid.avi", fourcc, framerate, (width,height), cv2.IMREAD_COLOR)
+            rgbFileName = fileName.replace(".bag","_RGB.avi")
 
-            if not video_writer.isOpened():
-                self.errorMessages(2)
+            if os.path.isfile(rgbFileName):
+                print colored('Load RGB video', 'yellow')
+                (self.message_count,self.duration,compressed, framerate) = get_bag_metadata(bag)
             else:
-                #print("Video initialized")
-                for frame in imageBuffer:
-                    video_writer.write(frame)
-                video_writer.release()
+                #Get bag metadata
+                print colored('Get rgb data from ROS', 'green')
+                (self.message_count,self.duration,compressed, framerate) = get_bag_metadata(bag)
+                #Buffer the rosbag, boxes, timestamps
+                (imageBuffer, self.time_buff) = buffer_data(bag, "/camera/rgb/image_raw", compressed)
+                fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
+                height, width, bytesPerComponent = imageBuffer[0].shape
+                video_writer = cv2.VideoWriter(rgbFileName, fourcc, framerate, (width,height), cv2.IMREAD_COLOR)
 
-        if self.rgbButton:
-            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath('myvid.avi'))))
-            self.playButton.setEnabled(True)
-        elif self.depthButton:
-            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath('myvidDepth.avi'))))
-            self.playButton.setEnabled(True)
+                if not video_writer.isOpened():
+                    self.errorMessages(2)
+                else:
+                    #print("Video initialized")
+                    for frame in imageBuffer:
+                        video_writer.write(frame)
+                    video_writer.release()
+                print colored('Finally...', 'yellow')
+        try:
+            if self.rgbButton:
+                self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(rgbFileName))))
+                self.playButton.setEnabled(True)
+            elif self.depthButton:
+                self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(depthFileName))))
+                self.playButton.setEnabled(True)
 
-        #DEFINE PLAYER-PLAYLIST   
-        #----------------------
-        self.source = QtCore.QUrl.fromLocalFile(os.path.abspath(audioGlobals.wavFileName))
-        self.content = QMediaContent(self.source)
-        self.player = QMediaPlayer()
-        self.playlist = QMediaPlaylist(self)
-        self.playlist.addMedia(self.content)
-        self.player.setPlaylist(self.playlist)
+            #DEFINE PLAYER-PLAYLIST   
+            #----------------------
+            self.source = QtCore.QUrl.fromLocalFile(os.path.abspath(audioGlobals.wavFileName))
+            self.content = QMediaContent(self.source)
+            self.player = QMediaPlayer()
+            self.playlist = QMediaPlaylist(self)
+            self.playlist.addMedia(self.content)
+            self.player.setPlaylist(self.playlist)
 
-        self.wave.drawWave()
-        self.wave.drawAnnotations()
-        self.wave.draw()
-        self.chart.drawChart()
-        self.chart.draw()
+            self.wave.drawWave()
+            self.wave.drawAnnotations()
+            self.wave.draw()
+            self.chart.drawChart()
+            self.chart.draw()
+        except:
+            pass
+
 
 
     #Open CSV file

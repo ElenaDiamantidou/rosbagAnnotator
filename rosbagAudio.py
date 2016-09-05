@@ -24,6 +24,7 @@ import matplotlib.transforms as transforms
 
 import runFunction
 from audioGlobals import audioGlobals
+from termcolor import colored
 
 programmName = os.path.basename(sys.argv[0])
 
@@ -130,10 +131,17 @@ def createWaveform(wavFileName):
 def runMain(bag, bagFileName):
     #read bag file
     audioGlobals.bagFile = bagFileName
-    audioData, frequency = audio_bag_file(bag) 
-    # get audio data 
-    mp3FileName = write_mp3_file(audioData, audioGlobals.bagFile)
-    audioGlobals.wavFileName = mp3_to_wav(mp3FileName, frequency)
+
+    audioFileName = bagFileName.replace(".bag",".wav")
+    if os.path.isfile(audioFileName):
+        print colored('Load WAV File', 'yellow')
+        audioGlobals.wavFileName =  audioFileName
+    else:
+        print colored('Get audio data from ROS', 'green')
+        audioData, frequency = audio_bag_file(bag) 
+        # get audio data 
+        mp3FileName = write_mp3_file(audioData, audioGlobals.bagFile)
+        audioGlobals.wavFileName = mp3_to_wav(mp3FileName, frequency)
     runFunction.run(audioGlobals.wavFileName, audioGlobals.bagFile)
 
 

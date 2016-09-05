@@ -66,7 +66,6 @@ def run(wavFileName2,bagFile2):
     csvFileName = audioGlobals.bagFile.replace(".bag","_audio.csv")
     if os.path.isfile(csvFileName):
         annotationFile = open(csvFileName, 'rb')
-        print 'csv file found!'
 
         read = csv.reader(annotationFile)
         for row in read:
@@ -86,7 +85,6 @@ def run(wavFileName2,bagFile2):
     # >> Call Classifier in case CSVFile not exists 
     #---------------------- 
     else:
-        print 'classifier annotations!'
         [flagsInd, classesAll, acc] = aS.mtFileClassification(audioGlobals.wavFileName, 'svmModelTest', 'svm', False)
         # declare classes
         [segs, classes] = aS.flags2segs(flagsInd, 1)

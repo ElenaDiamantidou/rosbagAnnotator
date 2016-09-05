@@ -25,6 +25,7 @@ import itertools
 
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
+from termcolor import colored
 
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import CompressedImage
@@ -115,35 +116,36 @@ def depth_bag_file(bagFile, input_topic):
 
     return messages,duration,compressed, framerate
 
-def runMain(bagFileName):
+def runMain(bagFileName, fileName):
 #if __name__ == '__main__':
     #bagFileName = 'ss1_lsN_sc1A_ruedia_cg_v.bag'
     #bagFileName = rosbag.Bag(bagFileName)
-    
-    (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, "/camera/depth/image_raw")
-    (imageBuffer, time_buff) = buffer_data(bagFileName, "/camera/depth/image_raw", compressed)
 
-    fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
-    height, width = imageBuffer[0].shape
-
-
-    '''
-    print imageBuffer[150][10][:]
-    print '------------------'
-    print np.where(imageBuffer == 255)
-    '''
-    
-    # 0 for grayscale image 
-    # non zero values for color frames
-    video_writer = cv2.VideoWriter("myvidDepth.avi", fourcc, framerate, (width,height), 0)
-
-    if not video_writer.isOpened():
-        self.errorMessages(2)
+    depthFileName = fileName.replace(".bag","_DEPTH.avi")
+    if os.path.isfile(depthFileName):
+        print colored('Load depth Video', 'yellow')
+        return depthFileName
     else:
-        #VideoWriter(const string& filename, int fourcc, double fps, Size frameSize, bool isColor=true)
-        for frame in imageBuffer:
-            depthFrame = frame.astype('uint8')
-            video_writer.write(depthFrame)
-        video_writer.release()
+        print colored('Get depth data from ROS', 'green')
+        (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, "/camera/depth/image_raw")
+        (imageBuffer, time_buff) = buffer_data(bagFileName, "/camera/depth/image_raw", compressed)
+
+        fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
+        height, width = imageBuffer[0].shape
+        
+        # 0 for grayscale image 
+        # non zero values for color frames
+        video_writer = cv2.VideoWriter(depthFileName, fourcc, framerate, (width,height), 0)
+
+        if not video_writer.isOpened():
+            self.errorMessages(2)
+        else:
+            #VideoWriter(const string& filename, int fourcc, double fps, Size frameSize, bool isColor=true)
+            for frame in imageBuffer:
+                depthFrame = frame.astype('uint8')
+                video_writer.write(depthFrame)
+            video_writer.release()
+
+        return depthFileName
 
 
