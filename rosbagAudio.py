@@ -90,6 +90,7 @@ def write_mp3_file(audioData, bagFile):
 def mp3_to_wav(mp3Path, frequency):
     #call arg not file...
     wavFileName = mp3Path.replace(".mp3",".wav")
+    #write 1.6 kHz
     subprocess.call(['ffmpeg', '-i', mp3Path, '-y', '-ar', '16000', '-ac', '1', wavFileName])
     return wavFileName
 

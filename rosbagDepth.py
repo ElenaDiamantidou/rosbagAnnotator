@@ -119,7 +119,7 @@ def runMain(bagFileName):
 #if __name__ == '__main__':
     #bagFileName = 'ss1_lsN_sc1A_ruedia_cg_v.bag'
     #bagFileName = rosbag.Bag(bagFileName)
-
+    
     (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, "/camera/depth/image_raw")
     (imageBuffer, time_buff) = buffer_data(bagFileName, "/camera/depth/image_raw", compressed)
 
