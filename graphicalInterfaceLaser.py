@@ -109,6 +109,44 @@ def onClick(event):
                     secondclick = False
                     if ((laserGlobals.cnt>0) and (laserGlobals.cnt<len(laserGlobals.annot))):
                         laserGlobals.scan_widget.drawLaserScan()
+def contextMenuEvent(self,event):
+
+    global ok, rightClick
+
+    rightClick = event.pos()
+
+    if (laserGlobals.ok == 'Rect'):
+
+        menu = QMenu(self)
+
+        deleteBox = menu.addAction('Delete Box')
+        deleteBox.triggered.connect(self.delBox)
+        changeId = menu.addAction('Change Id')
+        changeId.triggered.connect(self.chId)
+        cancel = menu.addAction('Cancel')
+
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+
+def delBox(self,action):
+    global firstclick,secondclick,cnt,annot,ok,scan_widget
+    firstclick = False
+    secondclick = False
+    if ((cnt>=0) and (cnt<len(annot))):
+        laserGlobals.ok = 'Yes'
+        laserGlobals.scan_widget.drawLaserScan()
+
+def chId(self,action):
+    global le, rightClick
+    le = QLineEdit(self.window())
+    le.setDragEnabled(True)
+    le.setPlaceholderText("Write ID:")
+    le.move(700,100)
+    #le.move(rightClick)
+    le.show()
+    Ok = QPushButton("Ok", self)
+    Ok.move(700,150)
+    Ok.clicked.connect(self.showObject)
+    Ok.show()
 
 class LS(Window):
 
@@ -140,7 +178,7 @@ class LS(Window):
         if (laserGlobals.ok == 'Yes'):
             self.axes.clear()
             self.axes.axis('equal')
-            self.axes.plot(laserGlobals.annot[laserGlobals.cnt].samex,laserGlobals.annot[laserGlobals.cnt].samey,'bo')
+            self.axes.plot(laserGlobals.annot[laserGlobals.cnt].samex,laserGlobals.annot[laserGlobals.cnt].samey,'o')
             if not laserGlobals.annot[laserGlobals.cnt].listofpointsx == []:
                 for j in range(len(laserGlobals.annot[laserGlobals.cnt].colourID)):
                     self.axes.plot(laserGlobals.annot[laserGlobals.cnt].listofpointsx[j],laserGlobals.annot[laserGlobals.cnt].listofpointsy[j],color=laserGlobals.annot[laserGlobals.cnt].colourID[j],marker='o')
@@ -344,8 +382,7 @@ def run(laserx,lasery,bagFile, filename):
 
     global timer,annot,s1,s2,bag_file,colorName
 
-    timer = QtCore.QTimer(None)
-
+    timer = QtCore.QTimer(None) 
     bag_file = bagFile
     filename = filename.replace(".bag", "_laser.csv")
     if os.path.isfile(filename):

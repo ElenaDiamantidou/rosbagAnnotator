@@ -37,7 +37,7 @@ from pyAudioAnalysis import audioBasicIO
 from audioGlobals import audioGlobals
 import editAnnotations as eA
 
-annotationColors = (['Speech', 'green'],['Music','red'], ['Activity', 'magenta'],['Laugh', 'yellow'])
+annotationColors = (['Speech', 'green'],['Music','red'], ['Activity', 'magenta'],['Laugh', 'yellow'], ['Cough', '#4B0082'])
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #  ONCLICK FUNCTION                                                                       #
@@ -255,7 +255,7 @@ class Waveform(Window):
     # >> PLOT WAVEFORM
     #----------------------
     def drawWave(self):
-
+        self.axes.clear()
         #PLOT WAVEFORM
         self.plotStep = 100
         self.signalToPlot = audioGlobals.signal[0:-1:self.plotStep]
@@ -464,6 +464,9 @@ class Waveform(Window):
 
         elif text == 'Laugh':
             audioGlobals.colorName = 'yellow'
+            doIt = True
+        elif text == 'Cough':
+            audioGlobals.colorName = '#4B0082'
             doIt = True
         
         if doIt:

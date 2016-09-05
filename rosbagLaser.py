@@ -32,21 +32,28 @@ sy = []
 def play_bag_file(bag, input_topic):
 	global laserDistances, sx, sy, theta
 
-	compressed = False
-	#bag = rosbag.Bag(bag_file)
+	topicKey = 0
+	topic = 0
+	flag = False
 	info_dict = yaml.load(bag._get_yaml_info())
 	topics =  info_dict['topics']
-	topic = topics[1]
+
+	for key in range(len(topics)):
+	    if topics[key]['topic'] == input_topic:
+	        topicKey = key
+
+	topic = topics[topicKey]
 	messages =  topic['messages']
 	duration = info_dict['duration']
 	topic_type = topic['type']
+	frequency = topic['frequency']
 
 
 	#Checking if the topic is compressed
 	if 'CompressedImage' in topic_type:
-		compressed = True
+	    compressed = True
 	else:
-		compressed = False
+	    compressed = False
 
 	#Get framerate
 
@@ -85,5 +92,5 @@ def runMain(bag, bag_file):
 
 	#Open bag and get framerate	
 	play_bag_file(bag, '/scan')
-
 	gL.run(sx, sy, bag, bag_file)
+

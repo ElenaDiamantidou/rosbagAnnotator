@@ -43,7 +43,7 @@ class audioGlobals:
 	greenIndex = 0
 
 	#Annotations important variables
-	classLabels = ['Music', 'Activity', 'Laugh']
+	classLabels = ['Music', 'Activity', 'Laugh', 'Cough']
 	annotationFlag = False
 	annotations = []
 	timeArrayToPlot = []

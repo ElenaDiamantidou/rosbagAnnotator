@@ -967,11 +967,11 @@ class VideoPlayer(QWidget):
                 bag = rosbag.Bag(fileName)
                 # Write audio and depth -> IMPORTANT
                 rosbagAudio.runMain(bag, str(fileName))
-                #rosbagLaser.runMain(bag, str(fileName))
                 rosbagDepth.runMain(bag)
                 # when audio change remember to correct bag file NOT bag file name !!!
             except:
                 self.errorMessages(0)
+            rosbagLaser.runMain(bag, str(fileName))
 
             #Get bag metadata
             (self.message_count,self.duration,compressed, framerate) = get_bag_metadata(bag)
@@ -1250,19 +1250,29 @@ class boundBox(object):
             
             startPoint = abs(x1 - (imWidth/2))
             x1Angle = math.atan(startPoint/MK)
-            x1Angle = x1Angle + (camAngleRadians/2)
+            if x1-(imWidth/2) > 0:
+                x1Angle = x1Angle + (camAngleRadians/2)
+            else:
+                x1Angle = (camAngleRadians/2) - x1Angle
 
             endPoint = abs(x2 - (imWidth/2))
             x2Angle = math.atan(endPoint/MK)
-            x2Angle = x2Angle + (camAngleRadians/2)
+            if x2-(imWidth/2) > 0:
+                x2Angle = x2Angle + (camAngleRadians/2)
+            else:
+                x2Angle = (camAngleRadians/2) - x2Angle
+
 
             #angle = abs(math.degrees(x2Angle - x1Angle))
-            #print math.degrees(x1Angle), math.degrees(x2Angle)
 
             # angle to laser 270 degrees
             x1 = x1 + math.radians(105)
             x2 = x2 + math.radians(105)
 
+            #rho = np.sqrt(x1**2 + self.box_Param[index][1]**2)
+            #phi = np.arctan2(self.box_Param[index][1], x1)
+            #print rho, phi
+            #print math.degrees(x1Angle)#, math.degrees(x2Angle)
 
 
 
@@ -1332,7 +1342,7 @@ class gantShow(videoGantChart):
 
         #self.axes.set_xticks(self.tickX)
         self.axes.set_xticklabels([])
-        self.axes.get_xaxis().set_visible(False)
+        #self.axes.get_xaxis().set_visible(False)
         self.axes.set_yticks(self.tickY)
         self.axes.set_ylim([-1,len(self.boxAtYaxes)])
         self.axes.set_yticklabels(['<'+str(index[0])+'>::'+index[1] for index in self.boxAtYaxes])

@@ -85,7 +85,7 @@ def buffer_data(bag, input_topic, compressed):
     return image_buff, time_buff  
 
 
-def depth_bag_file(bagFile):
+def depth_bag_file(bagFile, input_topic):
     topicKey = 0
     topic = 0
     flag = False
@@ -94,7 +94,7 @@ def depth_bag_file(bagFile):
     topics =  info_dict['topics']
 
     for key in range(len(topics)):
-        if topics[key]['topic'] == '/camera/depth/image_raw':
+        if topics[key]['topic'] == input_topic:
             topicKey = key
 
     topic = topics[topicKey]
@@ -120,7 +120,7 @@ def runMain(bagFileName):
     #bagFileName = 'ss1_lsN_sc1A_ruedia_cg_v.bag'
     #bagFileName = rosbag.Bag(bagFileName)
 
-    (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName)
+    (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, "/camera/depth/image_raw")
     (imageBuffer, time_buff) = buffer_data(bagFileName, "/camera/depth/image_raw", compressed)
 
     fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
