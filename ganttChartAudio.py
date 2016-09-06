@@ -36,7 +36,7 @@ from pyAudioAnalysis import audioBasicIO
 
 from audioGlobals import audioGlobals
 
-annotationColors = (['Speech', 'green'],['Music','red'], ['Activity', 'magenta'],['Laugh', 'yellow'], ['Cough', '#4B0082'])
+annotationColors = (['Speech', 'green'],['Music','red'], ['Activity', 'magenta'],['Laugh', 'yellow'], ['Cough', '#4B0082'], ['Moan', '#800000'])
 
 class ChartWindow(FigureCanvas):
     def __init__(self, parent=None, width=15, height=1, dpi=100):

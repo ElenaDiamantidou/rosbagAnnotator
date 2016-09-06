@@ -14,7 +14,7 @@ matplotlib.use('Qt5Agg')
 from PyQt5 import QtCore, QtWidgets, QtGui
 from PyQt5.QtCore import Qt, QUrl, pyqtSignal, QFile, QIODevice
 from PyQt5.QtWidgets import (QApplication, QComboBox, QHBoxLayout, QPushButton,
-QSizePolicy, QVBoxLayout, QWidget,QLineEdit, QInputDialog)
+QSizePolicy, QVBoxLayout, QWidget,QLineEdit, QInputDialog, QMenu)
 
 from numpy import arange
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -55,6 +55,9 @@ selections = []
 le = None
 objs = None
 reinitialize = False
+rightClick = None
+items = []
+openline = False
 
 class Window(FigureCanvas):
 
@@ -109,9 +112,34 @@ def onClick(event):
                     secondclick = False
                     if ((laserGlobals.cnt>0) and (laserGlobals.cnt<len(laserGlobals.annot))):
                         laserGlobals.scan_widget.drawLaserScan()
-def contextMenuEvent(self,event):
+    else:
+        rightClick = event.x
+        xPos = event.xdata
+        yPos = event.ydata
 
-    global ok, rightClick
+        if (laserGlobals.ok == 'Rect'):
+
+            menu = QMenu()
+            deleteBox = menu.addAction('Delete Box')
+            cancel = menu.addAction('Cancel')
+            submenu = menu.addMenu('Choose Person')
+            for i in range(len(items)):
+                classes = submenu.addAction(items[i])
+                #classes.triggered.connect(functools.partial(chooseClass,items[i]))
+            changeId = submenu.addAction('Change Id')
+            cancel.triggered.connect(cancelannot)
+            changeId.triggered.connect(chId)
+            deleteBox.triggered.connect(delBox)
+            
+        menu.exec_(laserGlobals.scan_widget.mapToGlobal(QtCore.QPoint(x, y)))
+            
+
+
+        #action = menu.exec_(mapToGlobal(event.pos()))
+
+def contextMenuEvent(event):
+
+    global ok, rightClick,items,classes,submenu
 
     rightClick = event.pos()
 
@@ -121,32 +149,66 @@ def contextMenuEvent(self,event):
 
         deleteBox = menu.addAction('Delete Box')
         deleteBox.triggered.connect(self.delBox)
-        changeId = menu.addAction('Change Id')
+        submenu = menu.addMenu('Choose Person')
+        for i in range(len(items)):
+            classes = submenu.addAction(items[i])
+            classes.triggered.connect(functools.partial(self.chooseClass,items[i]))
+        changeId = submenu.addAction('Change Id')
         changeId.triggered.connect(self.chId)
         cancel = menu.addAction('Cancel')
+        cancel.triggered.connect(cancelannot)
 
-        action = menu.exec_(self.mapToGlobal(event.pos()))
+        #action = menu.exec_(self.mapToGlobal(event.pos()))
 
-def delBox(self,action):
-    global firstclick,secondclick,cnt,annot,ok,scan_widget
+def delBox():
+    global firstclick,secondclick,cnt,annot,ok,scan_widget,le,Ok,openline
     firstclick = False
     secondclick = False
-    if ((cnt>=0) and (cnt<len(annot))):
+    if ((laserGlobals.cnt>=0) and (laserGlobals.cnt<len(laserGlobals.annot))):
         laserGlobals.ok = 'Yes'
         laserGlobals.scan_widget.drawLaserScan()
+    if openline:
+        le.close()
+        Ok.close()
+        openline = False
 
-def chId(self,action):
-    global le, rightClick
-    le = QLineEdit(self.window())
+def chooseClass(txt_):
+    global colour_index,annot,selections,txt,colours,ok,scan_widget,items
+    colour_index = laserGlobals.annot[0].selections.index(txt_)%(len(colours))
+    laserGlobals.ok = 'Yes'
+    laserGlobals.scan_widget.training()
+
+
+def chId():
+    global le, rightClick,nw,Ok,openline
+    openline = True
+    le = QLineEdit()
     le.setDragEnabled(True)
     le.setPlaceholderText("Write ID:")
     le.move(700,100)
-    #le.move(rightClick)
     le.show()
-    Ok = QPushButton("Ok", self)
+    Ok = QPushButton("Ok")
     Ok.move(700,150)
-    Ok.clicked.connect(self.showObject)
+    #Ok.clicked.connect(showObject)
     Ok.show()
+
+def cancelannot():
+    global annot,cnt,samex,c1,c2,listofpointsx,listofpointsy,ok,scan_widget
+    for i in range(len(laserGlobals.annot[laserGlobals.cnt].samex)):
+        if ((laserGlobals.annot[laserGlobals.cnt].samex[i] >= c1[0]) and (laserGlobals.annot[laserGlobals.cnt].samex[i] <= c2[0]) and ((laserGlobals.annot[laserGlobals.cnt].samey[i] >= c2[1]) and (laserGlobals.annot[laserGlobals.cnt].samey[i] <= c1[1]))):
+            if ((laserGlobals.annot[laserGlobals.cnt].listofpointsx[i] != []) and (laserGlobals.annot[laserGlobals.cnt].listofpointsy[i] != [])): #IndexError: list index out of range
+                laserGlobals.annot[laserGlobals.cnt].listofpointsx[i] = []
+                laserGlobals.annot[laserGlobals.cnt].listofpointsy[i] = []
+    laserGlobals.ok = 'Yes'
+    laserGlobals.scan_widget.drawLaserScan()
+
+def showObject():
+    global le,selections,classes,objs,sel_pos
+    if le.text() not in selections:
+        print classes
+        classes.addAction(le.text())
+        objs = le.text()
+        selections.append(objs)
 
 class LS(Window):
 
@@ -158,7 +220,6 @@ class LS(Window):
     
 
     def icon(self):
-
         global ok
         #print laserGlobals.cnt
         if(laserGlobals.cnt<len(laserGlobals.annot)):

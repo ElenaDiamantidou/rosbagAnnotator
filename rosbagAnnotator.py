@@ -71,7 +71,6 @@ boxInitialized = False
 annotationColors = ['#00FF00', '#FF00FF','#FFFF00','#00FFFF','#FFA500']
 gantEnabled = False
 posSlider = 0
-durationSlider = 0
 xBoxCoord = []
 
 depthFileName = None
@@ -671,6 +670,7 @@ class VideoPlayer(QWidget):
         global gantChart
         super(VideoPlayer, self).__init__(parent)
         self.videobox = []
+        self.time_ = 0
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         #self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
         #self.setWindowFlags( (self.windowFlags() | Qt.CustomizeWindowHint) & ~Qt.WindowMaximizeButtonHint)
@@ -1045,7 +1045,7 @@ class VideoPlayer(QWidget):
                 # Write audio and depth -> IMPORTANT
                 rosbagAudio.runMain(bag, str(fileName))
                 depthFileName = rosbagDepth.runMain(bag, str(fileName))
-                rosbagLaser.runMain(bag, str(fileName))
+                #rosbagLaser.runMain(bag, str(fileName))
             except:
                 self.errorMessages(0)
 
@@ -1185,9 +1185,12 @@ class VideoPlayer(QWidget):
             self.mediaPlayer.pause()
             self.audioPause()
             self.laserPause()
-            self.time_ = self.videoTime
+            self.time_ = self.positionSlider
 
         else:
+            self.time_ = self.mediaPlayer.position()
+            self.player.setPosition(self.time_)
+            self.end = audioGlobals.duration*1000 - 10
             self.audioPlay()
             self.mediaPlayer.play()
             self.laserPlay()
@@ -1204,9 +1207,10 @@ class VideoPlayer(QWidget):
             self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
 
     def positionChanged(self, position):
+        time = "{0:.2f}".format(float(position)/1000)
         self.positionSlider.setValue(position)
-
-        self.timelabel.setText(self.label_tmp.format('Time: ' + str(position/1000) + '/ ' + str(audioGlobals.duration)))
+        self.positionSlider.setToolTip(str(time) + ' sec')
+        self.timelabel.setText(self.label_tmp.format('Time: ' + str(time) + '/ ' + str("{0:.2f}".format(self.duration)) + ' sec'))
         laserGlobals.cnt = position/100
 
         #self.timelabel.(position)

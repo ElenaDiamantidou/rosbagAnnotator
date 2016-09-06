@@ -74,13 +74,16 @@ def run(wavFileName2,bagFile2):
             audioGlobals.annotations.append([row[0], row[1], row[2]])
 
         # get speakers unic colors for annotation plot and ganttChart
+        #print len(audioGlobals.GreenShades)
         for shadeIndex in range(len(audioGlobals.annotations)):
             if audioGlobals.annotations[shadeIndex][2][:8] == 'Speech::':
-                audioGlobals.shadesAndSpeaker.append([audioGlobals.annotations[shadeIndex][2], audioGlobals.GreenShades[audioGlobals.greenIndex]])
-                if audioGlobals.greenIndex > len(audioGlobals.GreenShades):
+                #print audioGlobals.greenIndex, len(audioGlobals.GreenShades)-1
+                if audioGlobals.greenIndex >= (len(audioGlobals.GreenShades)-1):
                     audioGlobals.greenIndex = 0
                 else:
                     audioGlobals.greenIndex = audioGlobals.greenIndex + 1
+                #print audioGlobals.greenIndex, shadeIndex
+                audioGlobals.shadesAndSpeaker.append([audioGlobals.annotations[shadeIndex][2], audioGlobals.GreenShades[audioGlobals.greenIndex]])
 
     # >> Call Classifier in case CSVFile not exists 
     #---------------------- 
