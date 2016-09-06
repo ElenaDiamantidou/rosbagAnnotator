@@ -59,10 +59,10 @@ def audio_bag_file(bagFile):
     #Checking if the topic is audio
     if 'audio_common_msgs' in topic_type:
         sound = True
-        print "Audio found"
+        #print "Audio found"
     else:
         sound = False
-        print "Such a pity..."
+        #print "Such a pity..."
 
     audio = []
     if sound == True:
@@ -70,10 +70,10 @@ def audio_bag_file(bagFile):
             audio += msg.data
     nBytes = len(audio)
     nSamples = nBytes / 2    
-    print "total number of compressed bytes {0:d}".format(nBytes)
-    print "total number of compressed bytes {0:d}".format(nSamples)
-    print "total duration {0:.2f}".format(duration)
-    print "average bit rate {0:.2f}".format(float(nBytes) * 8.0 / float(duration))
+    #print "total number of compressed bytes {0:d}".format(nBytes)
+    #print "total number of compressed bytes {0:d}".format(nSamples)
+    #print "total duration {0:.2f}".format(duration)
+    #print "average bit rate {0:.2f}".format(float(nBytes) * 8.0 / float(duration))
 
     frequency = frequency * 1000
     #bag.close()    

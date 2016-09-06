@@ -76,11 +76,35 @@ xBoxCoord = []
 
 depthFileName = None
 rgbFileName = None
-def buffer_data(bag, input_topic, compressed):
+
+def printProgress (iteration, total, prefix = '', suffix = '', decimals = 1, barLength = 100):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        barLength   - Optional  : character length of bar (Int)
+    """
+    formatStr       = "{0:." + str(decimals) + "f}"
+    percents        = formatStr.format(100 * (iteration / float(total)))
+    filledLength    = int(round(barLength * iteration / float(total)))
+    bar             = '█' * filledLength + '-' * (barLength - filledLength)
+    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+    sys.stdout.flush()
+    if iteration == total:
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+def buffer_data(bag, input_topic, compressed, messages):
     image_buff = []
     time_buff  = []
     start_time = None
     bridge     = CvBridge()
+
+    i = 0
 
     #Buffer the images, timestamps from the rosbag
     for topic, msg, t in bag.read_messages(topics=[input_topic]):
@@ -99,6 +123,9 @@ def buffer_data(bag, input_topic, compressed):
 
         image_buff.append(cv_image)
         time_buff.append(t.to_sec() - start_time.to_sec())
+
+        i += 1
+        printProgress(i, messages, prefix = 'Buffer RGB Data:', suffix = 'Complete', barLength = 50)
 
     return image_buff,  time_buff
 
@@ -646,7 +673,7 @@ class VideoPlayer(QWidget):
         self.videobox = []
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         #self.setWindowFlags(self.windowFlags() | QtCore.Qt.CustomizeWindowHint)
-        self.setWindowFlags( (self.windowFlags() | Qt.CustomizeWindowHint) & ~Qt.WindowMaximizeButtonHint)
+        #self.setWindowFlags( (self.windowFlags() | Qt.CustomizeWindowHint) & ~Qt.WindowMaximizeButtonHint)
 
         self.box_buffer = []
         self.metric_buffer = []
@@ -664,6 +691,7 @@ class VideoPlayer(QWidget):
         # >> Video Gantt Chart
         self.gantt = gantShow()
         gantChart = self.gantt
+        gantChart.axes.get_xaxis().set_visible(False)
         gantChart.setFixedSize(1300, 130)
         
 
@@ -679,10 +707,20 @@ class VideoPlayer(QWidget):
         audioGlobals.chartFig = self.chart
         self.chart.setFixedSize(1300, 95)
         playButtonLaser = QPushButton("Play")
+        playButtonLaser.setFixedWidth(80)
+        playButtonLaser.setFixedHeight(30)
         pauseButtonLaser = QPushButton("Pause")
+        pauseButtonLaser.setFixedWidth(80)
+        pauseButtonLaser.setFixedHeight(30)
         prevFrameButtonLaser = QPushButton("Previous")
+        prevFrameButtonLaser.setFixedWidth(80)
+        prevFrameButtonLaser.setFixedHeight(30)
         nextFrameButtonLaser = QPushButton("Next")
+        nextFrameButtonLaser.setFixedWidth(80)
+        nextFrameButtonLaser.setFixedHeight(30)
         stopButtonLaser = QPushButton("Stop")
+        stopButtonLaser.setFixedWidth(80)
+        stopButtonLaser.setFixedHeight(30)
 
 
         buttonLayoutLaser = QHBoxLayout()
@@ -706,13 +744,18 @@ class VideoPlayer(QWidget):
         self.laserScan.setFixedSize(640, 480)
         self.videoWidget.setFixedSize(640, 480)
         self.openButton = QPushButton("Open...")
+        self.openButton.setFixedWidth(75)
+        self.openButton.setFixedHeight(30)
         self.importCsv = QPushButton("Import CSV...")
+        self.importCsv.setFixedWidth(85)
+        self.importCsv.setFixedHeight(30)
         self.openButton.clicked.connect(self.openFile)
         self.importCsv.clicked.connect(self.openCsv)
 
         # >> most important play button
         #----------------------
         self.playButton = QPushButton()
+        self.playButton.setFixedHeight(30)
         self.playButton.setEnabled(False)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.playButton.clicked.connect(self.play)
@@ -731,16 +774,17 @@ class VideoPlayer(QWidget):
         #self.positionSlider.setRange(0, audioGlobals.duration)
         self.positionSlider.setMinimum(0)
         self.positionSlider.setMaximum(audioGlobals.duration)
+        self.positionSlider.setTickInterval(1)
         self.positionSlider.sliderMoved.connect(self.setPosition)
 
         #add label to slider about elapsed time
         self.label_tmp = '<b><FONT SIZE=3>{}</b>'
-        self.timelabel = QLabel(self.label_tmp.format('Elapsed Time: ' + str(audioGlobals.duration)))
+        self.timelabel = QLabel(self.label_tmp.format('Time: ' + str(audioGlobals.duration)))
 
 
         self.label = QHBoxLayout()
         self.label.addWidget(self.timelabel)
-        self.label.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+        self.label.setAlignment(Qt.AlignRight)
 
         self.controlLayout = QHBoxLayout()
         self.controlLayout.addWidget(self.openButton)
@@ -749,10 +793,11 @@ class VideoPlayer(QWidget):
         self.controlLayout.addWidget(self.rgbButton)
         self.controlLayout.addWidget(self.depthButton)
         self.controlLayout.setAlignment(Qt.AlignLeft)
-        #self.controlLayout.addStretch(-1) 
+        #self.controlLayout.addStretch(1) 
         self.controlEnabled = False
 
         videoLayout = QVBoxLayout()
+        #videoLayout.addStretch(1) 
         videoLayout.addWidget(self.videoWidget)
         videoLayout.addLayout(self.controlLayout)
 
@@ -765,8 +810,14 @@ class VideoPlayer(QWidget):
         # >> Define Audio Player buttons 
         #---------------------- 
         playButtonAudio = QPushButton("Play")
+        playButtonAudio.setFixedWidth(80)
+        playButtonAudio.setFixedHeight(30)
         pauseButtonAudio = QPushButton("Pause")
+        pauseButtonAudio.setFixedWidth(80)
+        pauseButtonAudio.setFixedHeight(30)
         stopButtonAudio = QPushButton("Stop")
+        stopButtonAudio.setFixedWidth(80)
+        stopButtonAudio.setFixedHeight(30)
 
 
         # >> Define Audio layouts 
@@ -790,9 +841,10 @@ class VideoPlayer(QWidget):
         #laserClass.setAlignment(Qt.AlignTop)
         
         layoutLaser = QVBoxLayout()
+        #layoutLaser.addStretch(1)
         layoutLaser.addLayout(laserClass)
         layoutLaser.addLayout(self.controlLaser)
-        layoutLaser.setAlignment(Qt.AlignBottom)
+        #layoutLaser.setAlignment(Qt.AlignBottom)
 
         # >> Specify final layout align 
         #----------------------
@@ -962,12 +1014,29 @@ class VideoPlayer(QWidget):
     def videoPosition(self):
         self.videoTime = self.mediaPlayer.position()
 
+    '''
+    def MyPopup(self):
+        audioGlobals.msgDialog = QMessageBox()
+        audioGlobals.msgDialog.setWindowTitle("Rosbag Data")
+
+        #msg.setText("This is a message box")
+        #msg.setInformativeText("This is additional information")
+        #msg.setDetailedText("The details are as follows:")
+        audioGlobals.msgDialog.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+    
+        retval = audioGlobals.msgDialog.exec_()
+        print "value of pressed message box button:", retval
+    '''
+
     def openFile(self):
         global imageBuffer,framerate
         global depthFileName, rgbFileName
+        self.time_buff  = []
+        start_time = None
 
         fileName,_ = QFileDialog.getOpenFileName(self, "Open Bag", QDir.currentPath(),"(*.bag)")
 
+        # create a messsage box for get or load data info
         if not fileName:
             pass
         else:
@@ -976,8 +1045,7 @@ class VideoPlayer(QWidget):
                 # Write audio and depth -> IMPORTANT
                 rosbagAudio.runMain(bag, str(fileName))
                 depthFileName = rosbagDepth.runMain(bag, str(fileName))
-                #rosbagLaser.runMain(bag, str(fileName))
-                # when audio change remember to correct bag file NOT bag file name !!!
+                rosbagLaser.runMain(bag, str(fileName))
             except:
                 self.errorMessages(0)
 
@@ -986,12 +1054,19 @@ class VideoPlayer(QWidget):
             if os.path.isfile(rgbFileName):
                 print colored('Load RGB video', 'yellow')
                 (self.message_count,self.duration,compressed, framerate) = get_bag_metadata(bag)
+                # just fill time buffer in case that video exists
+                for topic, msg, t in bag.read_messages(topics=["/camera/rgb/image_raw"]):
+                    if start_time is None:
+                        start_time = t
+                    self.time_buff.append(t.to_sec() - start_time.to_sec())
             else:
                 #Get bag metadata
                 print colored('Get rgb data from ROS', 'green')
                 (self.message_count,self.duration,compressed, framerate) = get_bag_metadata(bag)
                 #Buffer the rosbag, boxes, timestamps
-                (imageBuffer, self.time_buff) = buffer_data(bag, "/camera/rgb/image_raw", compressed)
+                (imageBuffer, self.time_buff) = buffer_data(bag, "/camera/rgb/image_raw", compressed, self.message_count)
+                rgb = rgbFileName.split('/')
+                print 'Write rgb video...'
                 fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
                 height, width, bytesPerComponent = imageBuffer[0].shape
                 video_writer = cv2.VideoWriter(rgbFileName, fourcc, framerate, (width,height), cv2.IMREAD_COLOR)
@@ -1131,7 +1206,7 @@ class VideoPlayer(QWidget):
     def positionChanged(self, position):
         self.positionSlider.setValue(position)
 
-        self.timelabel.setText(self.label_tmp.format('Elapsed Time: ' + str(position/1000)))
+        self.timelabel.setText(self.label_tmp.format('Time: ' + str(position/1000) + '/ ' + str(audioGlobals.duration)))
         laserGlobals.cnt = position/100
 
         #self.timelabel.(position)
@@ -1204,6 +1279,7 @@ class VideoPlayer(QWidget):
 
     def closeEvent(self,event):
         self.writeCSV(self.videobox)
+
 
 #Holds the bound box parameters
 class boundBox(object):
@@ -1361,7 +1437,9 @@ class gantShow(videoGantChart):
 
         #self.axes.set_xticks(self.tickX)
         self.axes.set_xticklabels([])
-        #self.axes.get_xaxis().set_visible(False)
+        #align with audio gantt chart
+        self.axes.set_xlim([-1,audioGlobals.duration + 1])
+        self.axes.get_xaxis().set_visible(True)
         self.axes.set_yticks(self.tickY)
         self.axes.set_ylim([-1,len(self.boxAtYaxes)])
         self.axes.set_yticklabels(['<'+str(index[0])+'>::'+index[1] for index in self.boxAtYaxes])
@@ -1391,10 +1469,11 @@ class gantShow(videoGantChart):
 
 
 if __name__ == '__main__':
+    os.system('cls' if os.name == 'nt' else 'clear')
     app = QApplication(sys.argv)
 
     player = VideoPlayer()
-    player.resize(640,720)
+    #player.setFixedSize(1300,1025)
     player.show()
 
     sys.exit(app.exec_())

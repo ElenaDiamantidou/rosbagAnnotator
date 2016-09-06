@@ -22,6 +22,7 @@ import matplotlib
 import math
 from operator import itemgetter
 import itertools
+import time
 
 matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
@@ -55,13 +56,36 @@ def parse_arguments():
     #print inputFile 
     return inputFile
 
-def buffer_data(bag, input_topic, compressed):
+def printProgress (iteration, total, prefix = '', suffix = '', decimals = 1, barLength = 100):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        barLength   - Optional  : character length of bar (Int)
+    """
+    formatStr       = "{0:." + str(decimals) + "f}"
+    percents        = formatStr.format(100 * (iteration / float(total)))
+    filledLength    = int(round(barLength * iteration / float(total)))
+    bar             = '█' * filledLength + '-' * (barLength - filledLength)
+    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+    sys.stdout.flush()
+    if iteration == total:
+        sys.stdout.write('\n')
+        sys.stdout.flush()
+
+def buffer_data(bag, input_topic, compressed, messages):
     image_buff = []
     time_buff  = []
     start_time = None
     bridge     = CvBridge()
     #bag = rosbag.Bag(bagFile)
     #Buffer the images, timestamps from the rosbag
+
+    i = 0
 
     for topic, msg, t in bag.read_messages(topics=[input_topic]):
         if start_time is None:
@@ -82,6 +106,11 @@ def buffer_data(bag, input_topic, compressed):
         cv2.normalize(depthImg, depthImg, 0, 255, cv2.NORM_MINMAX)
         image_buff.append(depthImg)
         time_buff.append(t.to_sec() - start_time.to_sec())
+
+        #sleep(0.1)
+        # Update Progress Bar
+        i += 1
+        printProgress(i, messages, prefix = 'Buffer Depth Data:', suffix = 'Complete', barLength = 50)
 
     return image_buff, time_buff  
 
@@ -128,8 +157,8 @@ def runMain(bagFileName, fileName):
     else:
         print colored('Get depth data from ROS', 'green')
         (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, "/camera/depth/image_raw")
-        (imageBuffer, time_buff) = buffer_data(bagFileName, "/camera/depth/image_raw", compressed)
-
+        (imageBuffer, time_buff) = buffer_data(bagFileName, "/camera/depth/image_raw", compressed, message_count)
+        print 'Write depth video...'
         fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
         height, width = imageBuffer[0].shape
         
@@ -145,6 +174,7 @@ def runMain(bagFileName, fileName):
                 depthFrame = frame.astype('uint8')
                 video_writer.write(depthFrame)
             video_writer.release()
+
 
         return depthFileName
 

@@ -57,3 +57,6 @@ class audioGlobals:
 	selected = False
 	xCheck = None
 	isAbove = False
+
+	#Message Box Widget for info display
+	msgDialog = None
