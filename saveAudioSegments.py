@@ -12,10 +12,11 @@ from pyAudioAnalysis import audioVisualization as aV
 from pyAudioAnalysis import audioBasicIO
 
 
-if __name__ =='__main__':
+def save(csv_, wav):
 	#csv and wav file as argument
-	csvFileName = sys.argv[1]
-	wavFileName = sys.argv[2]
+	print csv_, wav
+	csvFileName = csv_
+	wavFileName = wav
 
 	Fs, x = audioBasicIO.readAudioFile(wavFileName)
 	annotations = []
@@ -117,5 +118,5 @@ if __name__ =='__main__':
 			strOut = folderName + "/Silence_{1:d}.wav".format(wavFileName.replace(".wav",""), fileCounter)
 			fileCounter = fileCounter + 1
 			wavfile.write(strOut, Fs, x[int(Fs * s[0]):int(Fs * s[1])])
-
+		print 'Finish saving audio segments...'
 		

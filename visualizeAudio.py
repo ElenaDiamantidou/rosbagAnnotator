@@ -37,7 +37,7 @@ from pyAudioAnalysis import audioBasicIO
 from audioGlobals import audioGlobals
 import editAnnotations as eA
 
-annotationColors = (['Speech', 'green'],['Music','red'], ['Activity', 'magenta'],['Laugh', 'yellow'], ['Cough', '#4B0082'], ['Moan', '#800000'])
+annotationColors = (['Speech', 'green'],['Music','red'], ['Activity', 'magenta'],['Laugh', 'yellow'], ['Cough', '#4B0082'], ['Moan', '#800000'], ['Steps', '#FFA500'], ['TV', '#6F4E37'])
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #  ONCLICK FUNCTION                                                                       #
@@ -470,6 +470,10 @@ class Waveform(Window):
             doIt = True
         elif text == 'Moan':
             audioGlobals.colorName = '#800000'
+            doIt = True
+        elif text == 'Steps':
+            doIt = True
+        elif text =='TV':
             doIt = True
         
         if doIt:
