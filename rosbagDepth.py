@@ -53,7 +53,7 @@ programmName = os.path.basename(sys.argv[0])
 #input parameters
 def parse_arguments():
     inputFile = sys.argv[-1]
-    #print inputFile 
+    #print inputFile
     return inputFile
 
 def printProgress (iteration, total, prefix = '', suffix = '', decimals = 1, barLength = 100):
@@ -110,9 +110,9 @@ def buffer_data(bag, input_topic, compressed, messages):
         #sleep(0.1)
         # Update Progress Bar
         i += 1
-        printProgress(i, messages, prefix = 'Buffer Depth Data:', suffix = 'Complete', barLength = 50)
+        #printProgress(i, messages, prefix = 'Buffer Depth Data:', suffix = 'Complete', barLength = 50)
 
-    return image_buff, time_buff  
+    return image_buff, time_buff
 
 
 def depth_bag_file(bagFile, input_topic):
@@ -156,13 +156,20 @@ def runMain(bagFileName, fileName):
         return depthFileName
     else:
         print colored('Get depth data from ROS', 'green')
-        (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, "/camera/depth/image_raw")
-        (imageBuffer, time_buff) = buffer_data(bagFileName, "/camera/depth/image_raw", compressed, message_count)
+
+        (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, super.topic_window.temp_topics[1][1])
+        (imageBuffer, time_buff) = buffer_data(bagFileName, super.topic_window.temp_topics[1][1], compressed, message_count)
         print 'Write depth video...'
-        fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
+        #Check opencv version
+        (major, _, _) = cv2.__version__.split(".")
+        if major == '3':
+            fourcc = cv2.VideoWriter_fourcc('X', 'V' ,'I', 'D')
+        else:
+            fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
+
         height, width = imageBuffer[0].shape
-        
-        # 0 for grayscale image 
+
+        # 0 for grayscale image
         # non zero values for color frames
         video_writer = cv2.VideoWriter(depthFileName, fourcc, framerate, (width,height), 0)
 
