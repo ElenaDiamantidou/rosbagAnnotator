@@ -119,4 +119,9 @@ def save(csv_, wav):
 			fileCounter = fileCounter + 1
 			wavfile.write(strOut, Fs, x[int(Fs * s[0]):int(Fs * s[1])])
 		print 'Finish saving audio segments...'
+
+		for root, dirs, files in os.walk("/mydir"):
+		    for silenceFile in files:
+				if sys.getsizeof(silenceFile) <= 44:
+					os.remove(silenceFile)
 		

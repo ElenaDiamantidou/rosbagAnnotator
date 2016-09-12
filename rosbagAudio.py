@@ -136,12 +136,14 @@ def runMain(bag, bagFileName):
     if os.path.isfile(audioFileName):
         print colored('Load WAV File', 'yellow')
         audioGlobals.wavFileName =  audioFileName
+        audioGlobals.saveAudio = True
     else:
         print colored('Get audio data from ROS', 'green')
         audioData, frequency = audio_bag_file(bag) 
         # get audio data 
         mp3FileName = write_mp3_file(audioData, audioGlobals.bagFile)
         audioGlobals.wavFileName = mp3_to_wav(mp3FileName, frequency)
+        audioGlobals.saveAudio = False
     runFunction.run(audioGlobals.wavFileName, audioGlobals.bagFile)
 
 

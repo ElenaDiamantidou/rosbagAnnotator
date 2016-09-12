@@ -5,6 +5,7 @@ class audioGlobals:
 	wavFileName = None
 	rosbagName = None
 	bagFile = None
+	saveAudio = False
 
 	#Signal
 	spf = 0
