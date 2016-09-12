@@ -1221,7 +1221,7 @@ class VideoPlayer(QWidget):
             #Laser Topic selection
             if self.topic_window.temp_topics[3][1] != 'Choose Topic':
                 try:
-                    rosbagLaser.runMain(bag, str(fileName))
+                    rosbagLaser.runMain(bag, str(fileName),self.topic_window.temp_topics[3][1])
                     pass
                 except:
                     self.errorMessages(9)
