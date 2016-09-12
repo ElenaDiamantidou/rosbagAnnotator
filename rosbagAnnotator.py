@@ -801,7 +801,7 @@ class VideoPlayer(QWidget):
         self.gantt = gantShow()
         gantChart = self.gantt
         gantChart.axes.get_xaxis().set_visible(False)
-        gantChart.setFixedSize(1300, 130)
+        gantChart.setFixedSize(1300, 120)
 
 
         # >> Define Audio annotations and gantt chart
@@ -810,26 +810,17 @@ class VideoPlayer(QWidget):
         audioGlobals.fig = self.wave
         self.wave.axes.get_xaxis().set_visible(False)
         self.wave.draw()
-        self.wave.setFixedSize(1300, 185)
+        self.wave.setFixedSize(1300, 175)
 
         self.chart = gA.Chart()
         audioGlobals.chartFig = self.chart
-        self.chart.setFixedSize(1300, 95)
+        self.chart.setFixedSize(1300, 85)
         playButtonLaser = QPushButton("Play")
-        playButtonLaser.setFixedWidth(80)
-        playButtonLaser.setFixedHeight(30)
         pauseButtonLaser = QPushButton("Pause")
-        pauseButtonLaser.setFixedWidth(80)
-        pauseButtonLaser.setFixedHeight(30)
         prevFrameButtonLaser = QPushButton("Previous")
-        prevFrameButtonLaser.setFixedWidth(80)
-        prevFrameButtonLaser.setFixedHeight(30)
         nextFrameButtonLaser = QPushButton("Next")
-        nextFrameButtonLaser.setFixedWidth(80)
-        nextFrameButtonLaser.setFixedHeight(30)
         stopButtonLaser = QPushButton("Stop")
-        stopButtonLaser.setFixedWidth(80)
-        stopButtonLaser.setFixedHeight(30)
+
 
 
         buttonLayoutLaser = QHBoxLayout()
@@ -853,18 +844,13 @@ class VideoPlayer(QWidget):
         self.laserScan.setFixedSize(640, 480)
         self.videoWidget.setFixedSize(640, 480)
         self.openButton = QPushButton("Open...")
-        self.openButton.setFixedWidth(75)
-        self.openButton.setFixedHeight(30)
         self.importCsv = QPushButton("Import CSV...")
-        self.importCsv.setFixedWidth(85)
-        self.importCsv.setFixedHeight(30)
         self.openButton.clicked.connect(self.openFile)
         self.importCsv.clicked.connect(self.openCsv)
 
         # >> most important play button
         #----------------------
         self.playButton = QPushButton()
-        self.playButton.setFixedHeight(30)
         self.playButton.setEnabled(False)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.playButton.clicked.connect(self.play)
@@ -919,14 +905,8 @@ class VideoPlayer(QWidget):
         # >> Define Audio Player buttons
         #----------------------
         playButtonAudio = QPushButton("Play")
-        playButtonAudio.setFixedWidth(80)
-        playButtonAudio.setFixedHeight(30)
         pauseButtonAudio = QPushButton("Pause")
-        pauseButtonAudio.setFixedWidth(80)
-        pauseButtonAudio.setFixedHeight(30)
         stopButtonAudio = QPushButton("Stop")
-        stopButtonAudio.setFixedWidth(80)
-        stopButtonAudio.setFixedHeight(30)
 
 
         # >> Define Audio layouts
@@ -1658,9 +1638,12 @@ if __name__ == '__main__':
     player.show()
 
     app.exec_()
-    csvFileName = audioGlobals.bagFile.replace(".bag","_audio.csv")
-    if audioGlobals.saveAudio == False:
-        saveAudioSegments.save(csvFileName, audioGlobals.wavFileName)
+    try:
+        csvFileName = audioGlobals.bagFile.replace(".bag","_audio.csv")
+        if audioGlobals.saveAudio == False:
+            saveAudioSegments.save(csvFileName, audioGlobals.wavFileName)
+    except:
+        pass
 
     #sys.exit(app.exec_())
 
