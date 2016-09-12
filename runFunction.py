@@ -88,7 +88,7 @@ def run(wavFileName2,bagFile2):
     # >> Call Classifier in case CSVFile not exists 
     #---------------------- 
     else:
-        [flagsInd, classesAll, acc] = aS.mtFileClassification(audioGlobals.wavFileName, 'svmModelTest', 'svm', False)
+        [flagsInd, classesAll, acc,CM] = aS.mtFileClassification(audioGlobals.wavFileName, 'svmModelTest', 'svm', False)
         # declare classes
         [segs, classes] = aS.flags2segs(flagsInd, 1)
         lengthClass = len(classesAll)
