@@ -145,7 +145,7 @@ def depth_bag_file(bagFile, input_topic):
 
     return messages,duration,compressed, framerate
 
-def runMain(bagFileName, fileName):
+def runMain(bagFileName, fileName,input_topic):
 #if __name__ == '__main__':
     #bagFileName = 'ss1_lsN_sc1A_ruedia_cg_v.bag'
     #bagFileName = rosbag.Bag(bagFileName)
@@ -156,9 +156,8 @@ def runMain(bagFileName, fileName):
         return depthFileName
     else:
         print colored('Get depth data from ROS', 'green')
-
-        (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, super.topic_window.temp_topics[1][1])
-        (imageBuffer, time_buff) = buffer_data(bagFileName, super.topic_window.temp_topics[1][1], compressed, message_count)
+        (message_count,duration,compressed, framerate) = depth_bag_file(bagFileName, input_topic)
+        (imageBuffer, time_buff) = buffer_data(bagFileName, input_topic, compressed, message_count)
         print 'Write depth video...'
         #Check opencv version
         (major, _, _) = cv2.__version__.split(".")
