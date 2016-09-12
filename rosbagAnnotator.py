@@ -1000,10 +1000,12 @@ class VideoPlayer(QWidget):
             position = self.mediaPlayer.position()
             self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(rgbFileName))))
             self.mediaPlayer.setPosition(position)
-            self.player.setPosition(position)
             self.mediaPlayer.play()
-            self.audioPlay()
-            self.laserPlay()
+            if self.topic_window.temp_topics[0][1] != 'Choose Topic':
+                self.player.setPosition(position)
+                self.audioPlay()
+            if self.topic_window.temp_topics[3][1] != 'Choose Topic':
+                self.laserPlay()
             self.playButton.setEnabled(True)
 
     def depth(self, enabled):
@@ -1015,12 +1017,15 @@ class VideoPlayer(QWidget):
             self.rgbEnable = False
             self.depthEnable = True
             position = self.mediaPlayer.position()
-            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(depthFileName))))
-            self.mediaPlayer.setPosition(position)
-            self.player.setPosition(position)
-            self.mediaPlayer.play()
-            self.audioPlay()
-            self.laserPlay()
+            if self.topic_window.temp_topics[1][1] != 'Choose Topic':
+                self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(depthFileName))))
+                self.mediaPlayer.setPosition(position)
+                self.mediaPlayer.play()
+            if self.topic_window.temp_topics[0][1] != 'Choose Topic':
+                self.player.setPosition(position)
+                self.audioPlay()
+            if self.topic_window.temp_topics[3][1] != 'Choose Topic':
+                self.laserPlay()
             self.playButton.setEnabled(True)
 
     # AUDIO PLAYER BUTTON FUNCTIONS
@@ -1168,8 +1173,9 @@ class VideoPlayer(QWidget):
 
             #Depth Handling
             if self.topic_window.temp_topics[1][1] != 'Choose Topic':
+                depthFileName = rosbagDepth.runMain(bag, str(fileName),self.topic_window.temp_topics[1][1])
                 try:
-                    depthFileName = rosbagDepth.runMain(bag, str(fileName))
+                    pass
                 except:
                     self.errorMessages(7)
 
@@ -1347,17 +1353,22 @@ class VideoPlayer(QWidget):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.videoPosition()
             self.mediaPlayer.pause()
-            self.audioPause()
-            self.laserPause()
+            if self.topic_window.temp_topics[0][1] != 'Choose Topic':
+                self.audioPause()
+            if self.topic_window.temp_topics[3][1] != 'Choose Topic':
+                self.laserPause()
             self.time_ = self.positionSlider
 
         else:
             self.time_ = self.mediaPlayer.position()
-            self.player.setPosition(self.time_)
-            self.end = audioGlobals.duration*1000 - 10
-            self.audioPlay()
-            self.mediaPlayer.play()
-            self.laserPlay()
+            if self.topic_window.temp_topics[0][1] != 'Choose Topic':
+                self.player.setPosition(self.time_)
+                self.end = audioGlobals.duration*1000 - 10
+                self.audioPlay()
+            if self.topic_window.temp_topics[2][1] != 'Choose Topic':
+                self.mediaPlayer.play()
+            if self.topic_window.temp_topics[3][1] != 'Choose Topic':
+                self.laserPlay()
 
         # >> Get slider position for bound box
         posSlider = self.positionSlider.value()
@@ -1396,9 +1407,11 @@ class VideoPlayer(QWidget):
     def setPosition(self, position):
         global frameCounter, posSlider
         frameCounter = int(round(self.message_count * position/(self.duration * 1000)))
-        self.mediaPlayer.setPosition(position)
         posSlider = position
-        self.player.setPosition(position)
+        if self.topic_window.temp_topics[2][1] != 'Choose Topic':
+            self.mediaPlayer.setPosition(position)
+        if self.topic_window.temp_topics[0][1] != 'Choose Topic':
+            self.player.setPosition(position)
 
     #Writes the boxes to csv
     def writeCSV(self,videobox):
