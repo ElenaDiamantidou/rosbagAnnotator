@@ -860,10 +860,11 @@ class VideoPlayer(QWidget):
         self.rgbButton = QRadioButton("RGB")
         self.rgbButton.setChecked(True)
         self.rgbButton.toggled.connect(self.rgbVideo)
+        self.rgbButton.setEnabled(False)
 
         self.depthButton = QRadioButton("Depth")
         self.depthButton.toggled.connect(self.depth)
-
+        self.depthButton.setEnabled(False)
 
         self.positionSlider = QSlider(Qt.Horizontal)
         #self.positionSlider.setRange(0, audioGlobals.duration)
@@ -1208,6 +1209,8 @@ class VideoPlayer(QWidget):
 
         self.wave.axes.clear()
         self.chart.axes.clear()
+        self.rgbButton.setEnabled(True)
+        self.depthButton.setEnabled(True)
         try:
             if self.rgbButton:
                 self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(os.path.abspath(rgbFileName))))
