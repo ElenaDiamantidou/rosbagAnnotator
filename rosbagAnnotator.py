@@ -1178,11 +1178,11 @@ class VideoPlayer(QWidget):
                     rgb = rgbFileName.split('/')
                     print 'Write rgb video...'
                     #Check opencv version
-                    #(major, _, _) = cv2.__version__.split(".")
-                    #if major == '3':
-                    #    fourcc = cv2.VideoWriter_fourcc('X', 'V' ,'I', 'D')
-                    #else:
-                    fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
+                    (major, _, _) = cv2.__version__.split(".")
+                    if major == '3':
+                        fourcc = cv2.VideoWriter_fourcc('X', 'V' ,'I', 'D')
+                    else:
+                        fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
 
                     height, width, bytesPerComponent = imageBuffer[0].shape
                     video_writer = cv2.VideoWriter(rgbFileName, fourcc, framerate, (width,height), cv2.IMREAD_COLOR)

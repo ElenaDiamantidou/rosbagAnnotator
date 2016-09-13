@@ -160,11 +160,11 @@ def runMain(bagFileName, fileName,input_topic):
         (imageBuffer, time_buff) = buffer_data(bagFileName, input_topic, compressed, message_count)
         print 'Write depth video...'
         #Check opencv version
-        #(major, _, _) = cv2.__version__.split(".")
-        #if major == '3':
-        #    fourcc = cv2.VideoWriter_fourcc('X', 'V' ,'I', 'D')
-        #else:
-        fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
+        (major, _, _) = cv2.__version__.split(".")
+        if major == '3':
+            fourcc = cv2.VideoWriter_fourcc('X', 'V' ,'I', 'D')
+        else:
+            fourcc = cv2.cv.CV_FOURCC('X', 'V' ,'I', 'D')
 
         height, width = imageBuffer[0].shape
 
