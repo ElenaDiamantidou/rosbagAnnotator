@@ -82,26 +82,6 @@ BasicTopics = ['Audio', 'Depth', 'Video' , 'Laser']
 depthFileName = None
 rgbFileName = None
 
-def printProgress (iteration, total, prefix = '', suffix = '', decimals = 1, barLength = 100):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        barLength   - Optional  : character length of bar (Int)
-    """
-    formatStr       = "{0:." + str(decimals) + "f}"
-    percents        = formatStr.format(100 * (iteration / float(total)))
-    filledLength    = int(round(barLength * iteration / float(total)))
-    bar             = '█' * filledLength + '-' * (barLength - filledLength)
-    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
-    sys.stdout.flush()
-    if iteration == total:
-        sys.stdout.write('\n')
-        sys.stdout.flush()
 
 def buffer_data(bag, input_topic, compressed, messages):
     image_buff = []
@@ -319,7 +299,10 @@ class VideoWidget(QWidget):
         self.deleteEnabled = False
         self.deleteAllBoxes = False
         self.buttonLabels = []
+        self.addEventLabels = []
+        self.stopEventLabels = []
         classLabels = []
+        highLabels = []
         imageBuffer = []
 
 
@@ -330,20 +313,63 @@ class VideoWidget(QWidget):
     def contextMenuEvent(self,event):
         global posX
         global posY
-        global classLabels,gantChart,gantEnabled
+        global classLabels,gantChart,gantEnabled,highLabels,frameCounter
+        self.stopEventEnabled = False
+        self.addEventEnabled = False
 
         if event.reason() == QContextMenuEvent.Mouse:
             menu = QMenu(self)
             clear = menu.addAction('Clear')
+
+            posX = event.pos().x()
+            posY = event.pos().y()
 
             for i in classLabels:
                 self.buttonLabels.append(menu.addAction(i))
 
             deleteBox = menu.addAction('Delete Box')
             deleteAllBoxes = menu.addAction('Delete All Boxes')
+            addEvent = menu.addMenu('Add Event')
+            stopEvent = menu.addMenu('Stop Event')
+            stopEvent.setEnabled(False)
+            #Show only annotated high classes of the box
+            for i in range(len(player.videobox[frameCounter].box_Id)):
+                x,y,w,h = player.videobox[frameCounter].box_Param[i]
+                if posX > x and posX < (x+w) and posY > y and posY < (y+h):
+                    box_id = player.videobox[frameCounter].box_Id.index(i)
+                    if len(player.videobox[frameCounter].annotation) > 0:
+                        for annot in player.videobox[frameCounter].annotation[box_id]:
+                            if annot in highLabels and annot not in self.checkStopEventMenu:
+                                self.checkStopEventMenu.append(annot)
+                                self.stopEventLabels.append(stopEvent.addAction(annot))
+                                stopEvent.setEnabled(True)
+            #Initiate add Event menu
+            for label in highLabels:
+                self.addEventLabels.append(addEvent.addAction(label))
             changeId = menu.addAction('Change Id')
             cancel = menu.addAction('Cancel')
             action = menu.exec_(self.mapToGlobal(event.pos()))
+
+            #Check which submenu clicked
+            if action is not None:
+                if action.parent() == addEvent:
+                    self.addEventEnabled = True
+                elif action.parent() == stopEvent:
+                    self.stopEventEnabled = True
+
+            if self.addEventEnabled:
+                for index, key in enumerate(self.addEventLabels):
+                    if action == key:
+                        self.annotClass = highLabels[index]
+                        self.annotEnabled = True
+                        self.addEventEnabled = False
+
+            elif self.stopEventEnabled:
+                for index, key in enumerate(self.stopEventLabels):
+                    if action == key:
+                        player.videobox[frameCounter].removeEvent(box_id,self.stopEventLabels[index].text() )
+                        self.stopEventEnabled = False
+
             for i,key in enumerate(self.buttonLabels):
                 if action == key:
                     self.annotClass = classLabels[i]
@@ -363,16 +389,19 @@ class VideoWidget(QWidget):
                 self.annotClass = 'Clear'
                 self.annotEnabled = True
 
-            self.posX_annot = event.pos().x()
-            self.posY_annot = event.pos().y()
-
+            '''
             posX = event.pos().x()
             posY = event.pos().y()
-
+            '''
             self.repaint()
             self.buttonLabels = []
+            self.addEventLabels = []
+            self.stopEventLabels = []
+            self.checkStopEventMenu = []
         self.annotEnabled = False
+        self.stopEventEnabled = False
 
+        #print player.videobox[frameCounter].annotation
         #gantEnabled = True
         gantChart.axes.clear()
         gantChart.drawChart()
@@ -425,7 +454,7 @@ class VideoWidget(QWidget):
             i = 0
             while i < len(player.videobox[frameCounter].box_Id):
                 x,y,w,h = player.videobox[frameCounter].box_Param[i]
-                if self.posX_annot > x and self.posX_annot < (x+w) and self.posY_annot > y and self.posY_annot < (y+h):
+                if posX > x and posX < (x+w) and posY > y and posY < (y+h):
                     if not rectPainter.isActive():
                         rectPainter.begin(self)
                     rectPainter.setRenderHint(QPainter.Antialiasing)
@@ -483,21 +512,25 @@ class VideoWidget(QWidget):
             box = None
             for i in range(len(player.videobox[frameCounter].box_Id)):
                 x,y,w,h = player.videobox[frameCounter].box_Param[i]
-                if self.posX_annot > x and self.posX_annot < (x+w) and self.posY_annot > y and self.posY_annot < (y+h):
+                if posX > x and posX < (x+w) and posY > y and posY < (y+h):
                     if not rectPainter.isActive():
                         rectPainter.begin(self)
                     rectPainter.setRenderHint(QPainter.Antialiasing)
-                    rectPainter.setPen(QColor(self.getColorBox(self.annotClass)))
+                    if self.annotClass in highLabels:
+                        rectPainter.setPen(QColor(self.getColorBox(player.videobox[frameCounter].annotation[i])))
+                    else:
+                        rectPainter.setPen(QColor(self.getColorBox(self.annotClass)))
                     rectPainter.drawRect(x,y,w,h)
                     rectPainter.end()
 
+                    #Paint box id in current frame
                     if not boxIdPainter.isActive():
                         boxIdPainter.begin(self)
                     boxIdPainter.setRenderHint(QPainter.Antialiasing)
                     boxIdPainter.setPen(QColor(255,0,0))
                     boxIdPainter.drawText(QRectF(x+2,y,w,h),Qt.AlignLeft,str(player.videobox[frameCounter].box_Id[i]))
                     boxIdPainter.end()
-                    player.videobox[frameCounter].changeClass(i,self.annotClass)
+                    player.videobox[frameCounter].changeClass(i,str(self.annotClass))
                     box = i
                 else:
                     if not rectPainter.isActive():
@@ -507,6 +540,7 @@ class VideoWidget(QWidget):
                     rectPainter.drawRect(x,y,w,h)
                     rectPainter.end()
 
+                    #Paint box id in current frame
                     if not boxIdPainter.isActive():
                         boxIdPainter.begin(self)
                     boxIdPainter.setRenderHint(QPainter.Antialiasing)
@@ -517,8 +551,9 @@ class VideoWidget(QWidget):
             #Annotate the box at remaining frames
             while self.frameNumber < len(player.time_buff):
                 if box >= len(player.videobox[self.frameNumber].box_Id) or box is None:
-                    break
-                player.videobox[self.frameNumber].changeClass(box,self.annotClass)
+                    self.frameNumber += 1
+                    continue
+                player.videobox[self.frameNumber].changeClass(box,str(self.annotClass))
                 self.frameNumber += 1
 
         elif start_point is True and end_point is True:
@@ -536,7 +571,7 @@ class VideoWidget(QWidget):
                     #If id already in the list then give the next id
                     if boxNumber in player.videobox[frameCounter].box_Id:
                         boxNumber += 1
-                    player.videobox[frameCounter].addBox(timeId,[boxNumber,x,y,w,h],'Clear')
+                    player.videobox[frameCounter].addBox(timeId,[boxNumber,x,y,w,h],['Clear'])
                     self.enableWriteBox = False
 
                 for i in range(len(player.videobox[frameCounter].box_Id)):
@@ -576,6 +611,7 @@ class VideoWidget(QWidget):
         if rectPainter.isActive():
             rectPainter.end()
 
+
     #Mouse callback handling Boxes
     def mousePressEvent(self,event):
         global start_point,end_point
@@ -605,12 +641,29 @@ class VideoWidget(QWidget):
         self.surface.updateVideoRect()
 
     def getColorBox(self,action):
-        global classLabels
-        for index,key in enumerate(classLabels):
-            if action == key:
-                return annotationColors[index % len(annotationColors)]
-            elif action == 'Clear':
+        global classLabels,highLabels
+        for label in action:
+            if label in classLabels:
+                color = label
+                return annotationColors[classLabels.index(label) % len(annotationColors)]
+            elif label == 'Clear':
+                color = 'Clear'
                 return '#0000FF'
+            elif label in highLabels:
+                pass
+
+        if action in classLabels:
+            for index,key in enumerate(classLabels):
+                if action == key:
+                    return annotationColors[index % len(annotationColors)]
+                elif action == 'Clear':
+                    return '#0000FF'
+        else:
+            for index,key in enumerate(player.videobox[frameCounter].annotation):
+                if key in classLabels:
+                    return annotationColors[classLabels.index(key) % len(annotationColors)]
+                elif key == 'Clear':
+                    return '#0000FF'
 
 class textBox(QWidget):
 
@@ -1109,20 +1162,6 @@ class VideoPlayer(QWidget):
     def videoPosition(self):
         self.videoTime = self.mediaPlayer.position()
 
-    '''
-    def MyPopup(self):
-        audioGlobals.msgDialog = QMessageBox()
-        audioGlobals.msgDialog.setWindowTitle("Rosbag Data")
-
-        #msg.setText("This is a message box")
-        #msg.setInformativeText("This is additional information")
-        #msg.setDetailedText("The details are as follows:")
-        audioGlobals.msgDialog.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-
-        retval = audioGlobals.msgDialog.exec_()
-        print "value of pressed message box button:", retval
-    '''
-
     def openFile(self):
         global imageBuffer,framerate
         global depthFileName, rgbFileName, Topics
@@ -1240,11 +1279,9 @@ class VideoPlayer(QWidget):
         except:
             pass
 
-
-
     #Open CSV file
     def openCsv(self):
-        global classLabels,gantEnabled
+        global classLabels,gantEnabled,highLabels
         self.box_buffer = []
         self.metric_buffer = []
 
@@ -1274,13 +1311,13 @@ class VideoPlayer(QWidget):
                 for idx,key in enumerate(self.box_buffer):
                     if key[0] == 0:
                         counter += 1
-                        self.videobox[counter].addBox(self.time_buff[counter],key,'Clear')
+                        self.videobox[counter].addBox(self.time_buff[counter],key,['Clear'])
                     else:
-                        self.videobox[counter].addBox(self.time_buff[counter],key,'Clear')
+                        self.videobox[counter].addBox(self.time_buff[counter],key,['Clear'])
 
             #Parse json file
             try:
-                classLabels = self.parseJson()
+                classLabels, highLabels = self.parseJson()
             except:
                 self.errorMessages(3)
 
@@ -1290,12 +1327,17 @@ class VideoPlayer(QWidget):
             gantChart.draw()
 
     def parseJson(self):
+        json_basicLabel = []
+        json_highLabel = []
+
         with open("labels.json") as json_file:
                 json_data = json.load(json_file)
                 json_label = []
-                for i in json_data['labels'] :
-                    json_label.append(i)
-        return json_label
+                for i in json_data['basiclabels'] :
+                    json_basicLabel.append(i)
+                for j in json_data['highlevellabels']:
+                    json_highLabel.append(j)
+        return json_basicLabel,json_highLabel
 
     def errorMessages(self,index):
         msgBox = QMessageBox()
@@ -1476,10 +1518,35 @@ class boundBox(object):
         self.box_Param.pop(boxid)
         self.annotation.pop(boxid)
 
+    #Handles the annotation for basic and high level classes
     def changeClass(self,boxid,classify):
-        if boxid < len(self.annotation):
-            self.annotation.pop(boxid)
-        self.annotation.insert(boxid,classify)
+        global classLabels, highLabels
+        if classify in classLabels:
+            for annot in self.annotation[boxid]:
+                if annot in classLabels or annot == 'Clear':
+                    self.annotation[boxid].remove(annot)
+                    self.annotation[boxid].append(classify)
+        elif classify in highLabels:
+            if classify in self.annotation[boxid]:
+                pass
+            else:
+                self.annotation[boxid].append(classify)
+
+    #Remove high level events
+    def removeEvent(self,boxid,action):
+        global frameCounter
+        #boxid is the index of boxes
+        for key in self.annotation[boxid]:
+            if action == key:
+                self.annotation[boxid].remove(key)
+        frameNumber = frameCounter + 1
+        #Annotate the box at remaining frames
+        while frameNumber < len(player.time_buff):
+            if boxid >= len(player.videobox[frameNumber].box_Id):
+                break
+            if action in player.videobox[frameNumber].annotation[boxid]:
+                player.videobox[frameNumber].annotation[boxid].remove(action)
+            frameNumber += 1
 
     def calcAngle(self):
         # let's say that camera angle is 58 degrees..
@@ -1553,6 +1620,23 @@ class videoGantChart(FigureCanvas):
         pass
 
 #Class for the gantChart
+class videoGantChart(FigureCanvas):
+    def __init__(self, parent=None,width=15,height=1,dpi=100):
+        gantChart = Figure(figsize=(width, height), dpi=dpi)
+        self.axes = gantChart.add_subplot(111)
+
+        self.drawChart()
+
+        FigureCanvas.__init__(self, gantChart)
+        self.setParent(parent)
+
+        FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding, QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+
+    def drawChart(self):
+        pass
+
+#Class for the gantChart
 class gantShow(videoGantChart):
     #Plot the chart
     def drawChart(self):
@@ -1561,6 +1645,7 @@ class gantShow(videoGantChart):
         global xTicks
         global classLabels,gantEnabled
 
+        temp_action = []
         self.timeWithId = []
         self.tickY = []
         self.tickX = []
@@ -1575,62 +1660,66 @@ class gantShow(videoGantChart):
                 time_index += 1
 
         if gantEnabled:
-            for box_index in player.videobox:
-                for boxIdx in box_index.box_Id:
-                    if boxIdx > len(box_index.box_Id):
+            for frame_index in player.videobox:
+                for boxIdx in frame_index.box_Id:
+                    if boxIdx > frame_index.box_Id[-1]:
                         break
-                    self.boxAtYaxes.append([boxIdx,box_index.annotation[box_index.box_Id.index(boxIdx)]])
-                    self.timeWithId.append([boxIdx,box_index.timestamp[box_index.box_Id.index(boxIdx)],box_index.annotation[box_index.box_Id.index(boxIdx)]])
-
-            #Remove duplicates for the y axis
-            temp_set = set(map(tuple,self.boxAtYaxes))
-            self.boxAtYaxes = sorted(map(list,temp_set))
+                    for allactions in frame_index.annotation[boxIdx]:
+                        if isinstance(allactions, list):
+                            for action in allactions:
+                                self.boxAtYaxes.append([boxIdx,action])
+                                self.timeWithId.append([boxIdx,frame_index.timestamp[frame_index.box_Id.index(boxIdx)],action])
+                        else:
+                            self.boxAtYaxes.append([boxIdx,allactions])
+                            self.timeWithId.append([boxIdx,frame_index.timestamp[frame_index.box_Id.index(boxIdx)],frame_index.annotation[frame_index.box_Id.index(boxIdx)]])
+            #Remove duplicates and sort the Y axes
+            self.boxAtYaxes.sort()
+            self.boxAtYaxes = list(k for k,_ in itertools.groupby(self.boxAtYaxes))
 
             for key in range(len(self.boxAtYaxes)):
                 self.tickY.append(key)
             for index in range(len(self.timeWithId)):
-                self.startTime,self.endTime = self.timeCalc(self.timeWithId,index)
-                if self.timeWithId[index][1] == self.endTime:
-                    self.color = self.getColor(self.timeWithId[index][2])
-                    self.axes.hlines(self.boxAtYaxes.index([self.timeWithId[index][0],self.timeWithId[index][2]]), self.startTime,self.endTime+(1/framerate),linewidth=8,color=self.color)
-                self.color = self.getColor(self.timeWithId[index][2])
-                self.axes.hlines(self.boxAtYaxes.index([self.timeWithId[index][0],self.timeWithId[index][2]]), self.startTime,self.endTime,linewidth=8,color=self.color)
+                for action in self.timeWithId[index][2]:
+                    self.startTime,self.endTime = self.timeCalc(self.timeWithId,index,action)
+                    if self.timeWithId[index][1] == self.endTime:
+                        self.color = self.getColor(action)
+                        self.axes.hlines(self.boxAtYaxes.index([self.timeWithId[index][0],action]), self.startTime,self.endTime+(1/framerate),linewidth=8,color=self.color)
+                    else:
+                        self.color = self.getColor(action)
+                        self.axes.hlines(self.boxAtYaxes.index([self.timeWithId[index][0],action]), self.startTime,self.endTime,linewidth=8,color=self.color)
 
         for tick in self.axes.yaxis.get_major_ticks():
             tick.label.set_fontsize(9)
 
-        #self.axes.set_xticks(self.tickX)
         self.axes.set_xticklabels([])
-        #align with audio gantt chart
-        self.axes.set_xlim([-1,audioGlobals.duration + 1])
-        self.axes.get_xaxis().set_visible(True)
         self.axes.set_yticks(self.tickY)
         self.axes.set_ylim([-1,len(self.boxAtYaxes)])
         self.axes.set_yticklabels(['<'+str(index[0])+'>::'+index[1] for index in self.boxAtYaxes])
         self.axes.grid(True)
 
     #Calculates the end time for each annotation to plot
-    def timeCalc(self,time,curr):
-        temp_class = time[curr][2]
+    def timeCalc(self,time,curr,activity):
         temp_id = time[curr][0]
-        starttime = time[curr][1]
-        endtime = time[curr][1]
-        while temp_class in time[curr] and temp_id in time[curr]:
-            endtime = time[curr][1]
+        startTime = time[curr][1]
+        endTime = time[curr][1]
+        while activity in time[curr][2] and temp_id in time[curr]:
+            endTime = time[curr][1]
             curr += 1
             if curr > len(time)-1:
                 break
-        return starttime,endtime
+        return startTime,endTime
 
     #Calculates the color for the gantChart and bound Boxes
-    def getColor(self,action):
-        global classLabels
-        for index,key in enumerate(classLabels):
-            if action == key:
-                return annotationColors[index % len(annotationColors)]
-            elif action == 'Clear':
-                return '#0000FF'
-
+    def getColor(self,label):
+        global classLabels,highLabels
+        if label == 'Clear':
+                #color = 'Clear'
+            return '#0000FF'
+        elif label in classLabels:
+                #color = label
+            return annotationColors[classLabels.index(label) % len(classLabels)]
+        elif label in highLabels:
+            return eventColors[highLabels.index(label) % len(highLabels)]
 
 if __name__ == '__main__':
     os.system('cls' if os.name == 'nt' else 'clear')
